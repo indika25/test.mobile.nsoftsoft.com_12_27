@@ -110,6 +110,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                         <th>Product Code</th>
                                         <th>Product Name</th>
                                         <th>Serial No</th>
+                                        <th>Imei No</th>
                                         <th>Total Quantity</th>
                                         <th>Free Qty</th>
                                         <th>Cost Price</th>
@@ -126,6 +127,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                             <td><?php echo $grndata->GRN_Product ?></td>
                                             <td><?php echo $grndata->Prd_Description ?></td>
                                             <td><?php echo $grndata->SerialNo ?></td>
+                                            <td><?php echo $grndata->EmiNo ?></td>
                                             <td class="text-right"><?php echo number_format($grndata->GRN_Qty,
                                                     2) ?></td>
                                             <td class="text-right"><?php echo number_format($grndata->GRN_FreeQty,
@@ -145,7 +147,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                     <thead>
                                     <tr>
 
-                                        <th colspan="9" class="text-right">Total</th>
+                                        <th colspan="10" class="text-right">Total</th>
                                         <th class="text-right"><?php echo number_format($grn_hed->GRN_NetAmount,
                                                 2); ?></th>
                                     </tr>

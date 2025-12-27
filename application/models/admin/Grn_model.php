@@ -17,21 +17,115 @@ class Grn_model extends CI_Model {
         return json_encode($q);
     }
 
-    public function loadproductjson($query,$sup,$supCode) {
+    public function loadproductjson($query,$sup,$supCode,$pLevel) {
+
+
         if($sup!=0){
-            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice')
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock,department.Discount')
                     ->from('product')
-                    ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    //->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
+                    ->join('department', 'department.DepCode = product.DepCode', 'INNER')
+                    // ->join('productserialemistock','productserialemistock.ProductCode = product.ProductCode','LEFT')
+                    // ->join('productserialstock','productserialstock.ProductCode = product.ProductCode','LEFT')
+                    // ->join('productimeistock','productimeistock.ProductCode = product.ProductCode','LEFT')
                     ->where('product.Prd_Supplier', $supCode)
+                    ->where('product.Prd_IsActive', 1)
+                    ->where('pricestock.PSPriceLevel', $pLevel)
                     ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->where('pricestock.Stock !=', 0)
                     ->limit(50)->get();
      
         }else{
-            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice')
+          
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock,department.Discount')
+                    ->from('product')
+                    //->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
+                    ->join('department', 'department.DepCode = product.DepCode', 'INNER')
+                    //   ->join('productserialemistock','productserialemistock.ProductCode = product.ProductCode','LEFT')
+                    // ->join('productserialstock','productserialstock.ProductCode = product.ProductCode','LEFT')
+                    // ->join('productimeistock','productimeistock.ProductCode = product.ProductCode','LEFT')
+                    ->where('pricestock.PSPriceLevel', $pLevel)
+                     ->where('product.Prd_IsActive', 1)
+                    ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->where('pricestock.Stock !=', 0)
+                    ->limit(50)->get();
+                 
+        }
+
+        if ($query1->num_rows() > 0) {
+            foreach ($query1->result_array() as $row) {
+                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description']." = Rs.".$row['Price']));
+                $new_row['value'] = htmlentities(stripslashes($row['ProductCode']));
+                $new_row['price'] = htmlentities(stripslashes($row['Price']));
+                $new_row['discount'] = htmlentities(stripslashes($row['Discount']));
+                $row_set[] = $new_row; //build an array
+            }
+            echo json_encode($row_set); //format the array into json data
+        }
+       
+    }
+
+    public function loadwholesalepriceproductjson($query,$sup,$supCode,$pLevel) {
+        if($sup!=0){
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock,pricestock.WholesalesPrice')
+                    ->from('product')
+                    //->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
+                    ->where('product.Prd_Supplier', $supCode)
+                     ->where('product.Prd_IsActive', 1)
+                      ->where('pricestock.WholesalesPrice IS NOT NULL', null, false)
+                    ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->where('pricestock.Stock !=', 0)
+                    ->limit(50)->get();
+     
+        }else{
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock,pricestock.WholesalesPrice')
+                    ->from('product')
+                    //->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
+                      ->where('pricestock.WholesalesPrice IS NOT NULL', null, false)
+                    ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->where('pricestock.Stock !=', 0)
+                     ->where('product.Prd_IsActive', 1)
+                    ->limit(50)->get();
+        }
+
+        if ($query1->num_rows() > 0) {
+            foreach ($query1->result_array() as $row) {
+                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description']." = Rs.".$row['Price']." = WP.".$row['WholesalesPrice']));
+                $new_row['value'] = htmlentities(stripslashes($row['ProductCode']));
+                $new_row['price'] = htmlentities(stripslashes($row['Price']));
+                $new_row['Wprice'] = htmlentities(stripslashes($row['WholesalesPrice']));
+                $row_set[] = $new_row; //build an array
+            }
+            echo json_encode($row_set); //format the array into json data
+        }
+       
+    }
+
+     public function loadproductjsonGrn($query,$sup,$supCode) {
+        if($sup!=0){
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice,productprice.PL_No,productcondition.DiscountLimit')
                     ->from('product')
                     ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join('productcondition', 'productcondition.ProductCode = product.ProductCode', 'INNER')
+                    ->where('product.Prd_Supplier', $supCode)
+                    ->where('productprice.PL_No', 1)
+                    ->where('product.Prd_IsActive',1)
                     ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
-                    ->limit(50)->get();
+                    ->get();
+     
+        }else{
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice,productprice.PL_No,productcondition.DiscountLimit')
+                    ->from('product')
+                    ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join('productcondition', 'productcondition.ProductCode = product.ProductCode', 'INNER')
+                    ->where('productprice.PL_No', 1)
+                    ->where('product.Prd_IsActive',1)
+                    ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->get();
         }
 
         if ($query1->num_rows() > 0) {
@@ -44,6 +138,32 @@ class Grn_model extends CI_Model {
         }
        
     }
+
+      public function loadproductjsonjob($query,$sup,$supCode,$pLevel) {
+        
+           $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock')
+                    ->from('product')
+                    ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
+                    ->where('pricestock.PSPriceLevel', $pLevel)
+                     ->where('product.Prd_IsActive', 1)
+                    ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->where('pricestock.Stock !=', 0)
+                    ->limit(50)->get();
+            // echo var_dump($query1);die;
+        if ($query1->num_rows() > 0) {
+            foreach ($query1->result_array() as $row) {
+                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description']." = Rs.".$row['Price']));
+                $new_row['value'] = htmlentities(stripslashes($row['ProductCode']));
+                $new_row['price'] = htmlentities(stripslashes($row['Price']));
+                $row_set[] = $new_row; //build an array
+            }
+            echo json_encode($row_set); //format the array into json data
+        }
+       
+    }
+
+
     public function loadpricelevel() {
         return $this->db->select()->from('pricelevel')->where('IsActive', 1)->get()->result();
     }
@@ -51,7 +171,7 @@ class Grn_model extends CI_Model {
         return $this->db->select()->from('location')->get()->result();
     }
     
-    public function saveGrn($grnHed,$post,$grnNo,$totalDisPrecent,$grnCredit,$maxSerialQty) {        
+    public function saveGrn($grnHed,$post,$grnNo,$totalDisPrecent,$grnCredit,$maxSerialQty) {   
         $product_codeArr = json_decode($post['product_code']);
         $unitArr = json_decode($post['unit_type']);
         $freeQtyArr = json_decode($post['freeQty']);
@@ -67,9 +187,24 @@ class Grn_model extends CI_Model {
         $price_levelArr = json_decode($post['price_level']);
         $totalAmountArr = json_decode($post['pro_total']);
         $isSerialArr = json_decode($post['isSerial']);
+        $branchCostArr = json_decode($post['sendBranch_cost_price']);
+        $sendwholesales_priceArr = json_decode($post['sendwholesales_price']);
+        $sendisemiNo_Arr = json_decode($_POST['sendisemiNo']);
+        $sendemiNo_Arr = json_decode($_POST['sendemiNo']);
+        // var_dump($sendemiNo_Arr);die;
         $location = $post['location'];
         $isRawMat =0;
-//        $this->db->trans_begin();
+
+        $lastSerialNo = null;
+        foreach (array_reverse($serial_noArr) as $val) {
+            if (!empty($val)) {
+                $lastSerialNo = $val;
+                break;
+            }
+        }
+       
+        // echo var_dump($product_codeArr);die;
+        //        $this->db->trans_begin();
         $this->db->trans_start();
         for ($i = 0; $i < count($product_codeArr); $i++) {
             $totalGrnQty = ($qtyArr[$i]+$freeQtyArr[$i]);
@@ -79,7 +214,7 @@ class Grn_model extends CI_Model {
                 'GRN_No' => $grnNo,
                 'GRN_PONo' => '',
                 'GRN_Date' => $post['grnDate'],
-                'GRN_LineNo' => $i,
+                'GRN_LineNo' => $i + 1,
                 'GRN_Product' => $product_codeArr[$i],
                 'GRN_UPC' => $upcArr[$i],
                 'GRN_UPCType' => $unitArr[$i],
@@ -98,26 +233,68 @@ class Grn_model extends CI_Model {
                 'GRN_DisPersantage' => $pro_discount_precentArr[$i],
                 'GRN_Amount' => $totalAmountArr[$i],
                 'GRN_NetAmount' => $total_netArr[$i],
-                'IsSerial' => $isSerialArr[$i],
-                'SerialNo' => $serial_noArr[$i],
-                'CostCode' => $sell_priceArr[$i]);
-            $this->db->insert('goodsreceivenotedtl', $grnDtl);
+                'IsSerial' => isset($isSerialArr[$i]) && $isSerialArr[$i] != '' ? $isSerialArr[$i] : '0',
+                'SerialNo' => isset($serial_noArr[$i]) && $serial_noArr[$i] != '' ? $serial_noArr[$i] : '0',
+                'CostCode' => $sell_priceArr[$i],
+                'BranchCostPrice' => $branchCostArr[$i],
+                'WholesalesPrice' => isset($sendwholesales_priceArr[$i]) && $sendwholesales_priceArr[$i] != '' ? $sendwholesales_priceArr[$i] : '0',
+                'IsEmiNo' => isset($sendisemiNo_Arr[$i]) ? $sendisemiNo_Arr[$i] : 0,
+                'EmiNo' => isset($sendemiNo_Arr[$i]) ? $sendemiNo_Arr[$i] : 0,
+            );
+             
+                // $this->db->insert('goodsreceivenotedtl', $grnDtl);
 
-             $isRawMat = $this->db->select('isRawMaterial')->from('productcondition')->where(array('ProductCode'=> $product_codeArr[$i]))->get()->row()->isRawMaterial;
-            //update serial stock
-             if( $isRawMat==0){
+  $this->db->insert('goodsreceivenotedtl', $grnDtl);
+        $err = $this->db->error();
+        if (!empty($err['code'])) {
+            $this->db->trans_rollback();
+            log_message('error', 'GRN insert error at line ' . ($i+1) . ': ' . print_r($err, true));
+            return ['status' => false, 'db_error' => $err, 'step' => 'insert_goodsreceivenotedtl', 'line' => $i+1];
+        }
+               
+                //$isRawMat = $this->db->select('isRawMaterial')->from('productcondition')->where(array('ProductCode'=> $product_codeArr[$i]))->get()->row()->isRawMaterial;
+                //echo var_dump($isRawMat);     
+                //update serial stock
+            //   if( $isRawMat==0){
                 $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode'=> $product_codeArr[$i],'SerialNo'=>$serial_noArr[$i],'Location'=>$location))->get();
-            if($ps->num_rows()>0){
-                $isPro = $this->db->select('InvProductCode')->from('invoicedtl')->where(array('InvProductCode'=> $product_codeArr[$i],'InvSerialNo'=>$serial_noArr[$i],'InvLocation'=>$location))->get();
-                if($isPro->num_rows()==0){
-                    $this->db->update('productserialstock',array('Quantity'=>$qtyArr[$i]),array('ProductCode'=> $product_codeArr[$i],'SerialNo'=>$serial_noArr[$i],'Location'=> $location));
+                
+                if($ps->num_rows()>0){
+                    $isPro = $this->db->select('InvProductCode')->from('invoicedtl')->where(array('InvProductCode'=> $product_codeArr[$i],'InvSerialNo'=>$serial_noArr[$i],'InvLocation'=>$location))->get();
+                   // echo var_dump('isPro' . $isPro);die;
+                    if($isPro->num_rows()==0){
+                         //echo var_dump('ture' . $isPro);die;
+                        $this->db->update('productserialstock',array('Quantity'=>$qtyArr[$i]),array('ProductCode'=> $product_codeArr[$i],'SerialNo'=>$serial_noArr[$i],'Location'=> $location));
+                        //$this->db->insert('productiemistock', array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'EmiNo'=>$sendemiNo_Arr[$i],'Quantity'=>$qtyArr[$i],'GrnNo'=>$grnNo));
+                    $err = $this->db->error();
+                if (!empty($err['code'])) {
+                    $this->db->trans_rollback();
+                    log_message('error', 'productserialstock update error: ' . print_r($err, true));
+                    return ['status' => false, 'db_error' => $err, 'step' => 'update_productserialstock'];
                 }
-            }else{
-                if($isSerialArr[$i]==1){
-                    $this->db->insert('productserialstock', array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=>$serial_noArr[$i],'Quantity'=>$qtyArr[$i],'GrnNo'=>$grnNo));
-                }
+                    }
+                }else{
+                   
+                    if($isSerialArr[$i]==1 && $sendisemiNo_Arr[$i] ==0){
+                         // var_dump('isSerialArr' . $isSerialArr[$i]);die;
+                        $this->db->insert('productserialstock', array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=>$serial_noArr[$i],'Quantity'=>$qtyArr[$i],'GrnNo'=>$grnNo));
+                    }
+                    else if($isSerialArr[$i]==0 && $sendisemiNo_Arr[$i] ==1){
+                    //echo var_dump('$sendisemiNo_Arr[$i]' . '-' . $sendisemiNo_Arr[$i] . '-'. $product_codeArr[$i] . '-' .$location . '-' . $sendemiNo_Arr[$i] . '-' . $qtyArr[$i] . '-' . $grnNo);die;
+                    $this->db->insert('productimeistock', array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'EmiNo'=>$sendemiNo_Arr[$i],'Quantity'=>$qtyArr[$i],'GrnNo'=>$grnNo));
+                    
+                }else if ($isSerialArr[$i]==1 && $sendisemiNo_Arr[$i] ==1){
+                         //echo var_dump('$sendaerialisemiNo_Arr[$i]' . $sendisemiNo_Arr[$i]);die;
+                         $this->db->insert('productserialemistock', array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=>$serial_noArr[$i],'EmiNo'=>$sendemiNo_Arr[$i],'Quantity'=>$qtyArr[$i],'GrnNo'=>$grnNo));
+                    }
+
+                     $err = $this->db->error();
+            if (!empty($err['code'])) {
+                $this->db->trans_rollback();
+                log_message('error', 'product stock insert error: ' . print_r($err, true));
+                return ['status' => false, 'db_error' => $err, 'step' => 'insert_productstock'];
             }
-             }
+                }
+            //   }
             
         
             //update product price
@@ -127,47 +304,116 @@ class Grn_model extends CI_Model {
             }else{
                 $this->db->insert('productprice', array('ProductCode'=> $product_codeArr[$i],'PL_No'=> $price_levelArr[$i],'ProductPrice'=>$sell_priceArr[$i]));
             }
+$err = $this->db->error();
+        if (!empty($err['code'])) {
+            $this->db->trans_rollback();
+            log_message('error', 'productprice upsert error: ' . print_r($err, true));
+            return ['status' => false, 'db_error' => $err, 'step' => 'productprice_upsert'];
+        }
+             //update wholesales price
+
+            if($sendwholesales_priceArr[$i] !==0){
+                 $this->db->update('productprice',array('ProductPrice'=>$sendwholesales_priceArr[$i]),array('ProductCode'=> $product_codeArr[$i],'PL_No'=>2));
+                   $this->db->update('pricestock',array('WholesalesPrice'=>$sendwholesales_priceArr[$i]),array('PSCode'=> $product_codeArr[$i],'PSPriceLevel'=>$price_levelArr[$i],'Price'=> $sell_priceArr[$i],));
+                $err = $this->db->error();
+            if (!empty($err['code'])) {
+                $this->db->trans_rollback();
+                log_message('error', 'wholesale price update error: ' . print_r($err, true));
+                return ['status' => false, 'db_error' => $err, 'step' => 'wholesale_update'];
+            }
+            }
             
             //update product cost
             $isUpdate=0;
-            $isCostUpdate = $this->db->select('Value')->from('systemoptions')->where('ID', 'M001')->get();// get system option
+            $isCostUpdate = $this->db->select('Value')->from('systemoptions')->where('ID', 'M001')->get();
             foreach ($isCostUpdate->result_array() as $row) {
                 $isUpdate = $row['Value'];
             } 
             
             if($isUpdate==1){
                 if($totalDisPrecent>0){
-                    $cost = $qtyPrice - ($qtyPrice*$totalDisPrecent/100);// - by total grn discount precnt
-                    $this->db->update('product',array('Prd_CostPrice'=>$cost),array('ProductCode'=> $product_codeArr[$i]));
+                    $cost = $qtyPrice - ($qtyPrice*$totalDisPrecent/100);
+                    $this->db->update('product',array('Prd_CostPrice'=>$cost, 'branchCost'=>$branchCostArr[$i]),array('ProductCode'=> $product_codeArr[$i]));
                 }else{
-                    $this->db->update('product',array('Prd_CostPrice'=>$qtyPrice),array('ProductCode'=> $product_codeArr[$i]));
+                    $this->db->update('product',array('Prd_CostPrice'=>$qtyPrice, 'branchCost'=>$branchCostArr[$i]),array('ProductCode'=> $product_codeArr[$i]));
                 }
+                  $err = $this->db->error();
+            if (!empty($err['code'])) {
+                $this->db->trans_rollback();
+                log_message('error', 'product cost update error: ' . print_r($err, true));
+                return ['status' => false, 'db_error' => $err, 'step' => 'update_product_cost'];
             }
-            if( $isRawMat==0){
-            //update price stock
-            $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$totalGrnQty','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location')");
+            }
             
+            $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$totalGrnQty','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location')");
+             $err = $this->db->error();
+        if (!empty($err['code'])) {
+            $this->db->trans_rollback();
+            log_message('error', 'SPT_UPDATE_PRICE_STOCK error: ' . print_r($err, true));
+            return ['status' => false, 'db_error' => $err, 'step' => 'SPT_UPDATE_PRICE_STOCK'];
+        }
+
+           
+            $this->db->update('pricestock',array('WholesalesPrice'=>$sendwholesales_priceArr[$i]),array('PSCode'=> $product_codeArr[$i],'PSPriceLevel'=>$price_levelArr[$i],'Price'=> $sell_priceArr[$i]));
+             $err = $this->db->error();
+            if (!empty($err['code'])) {
+            $this->db->trans_rollback();
+            log_message('error', 'pricestock update error: ' . print_r($err, true));
+            return ['status' => false, 'db_error' => $err, 'step' => 'pricestock_update'];
+        }
              //update product stock
-            $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$product_codeArr[$i]','$totalGrnQty',0,'$location')");
+           $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$product_codeArr[$i]','$totalGrnQty',0,'$location')");
+          $err = $this->db->error();
+        if (!empty($err['code'])) {
+            $this->db->trans_rollback();
+            log_message('error', 'SPT_UPDATE_PRO_STOCK error: ' . print_r($err, true));
+            return ['status' => false, 'db_error' => $err, 'step' => 'SPT_UPDATE_PRO_STOCK'];
         }
+        
         }
+        //}
         
         $supCode = $post['supcode'];
         $totalNet = $post['total_net_amount'];
         //update supplier outstanding
         if($supCode!=''){
-        //                 $isSup = $this->db->select('SupCode')->from('supplieroustanding')->where('SupCode',$supCode)->get();
-        // if($isSup->num_rows()>0){
+        
             $this->db->query("CALL SPT_UPDATE_SUPOUTSTAND('$supCode','$totalNet',0)");
-        // }else{
-            //$this->db->insert('supplieroustanding', array('SupCode'=> $supCode,'SupTotalInvAmount'=> $totalNet,'SupOustandingAmount'=>$totalNet,'SupSettlementAmount'=>0,'OpenOustanding'=>0,'OustandingDueAmount'=>0));
-        // }
+      $err = $this->db->error();
+        if (!empty($err['code'])) {
+            $this->db->trans_rollback();
+            log_message('error', 'SPT_UPDATE_SUPOUTSTAND error: ' . print_r($err, true));
+            return ['status' => false, 'db_error' => $err, 'step' => 'SPT_UPDATE_SUPOUTSTAND'];
         }
+         }
         $this->db->insert('creditgrndetails', $grnCredit);
+          $err = $this->db->error();
+    if (!empty($err['code'])) {
+        $this->db->trans_rollback();
+        log_message('error', 'creditgrndetails insert error: ' . print_r($err, true));
+        return ['status' => false, 'db_error' => $err, 'step' => 'insert_creditgrndetails'];
+    }
         $this->db->insert('goodsreceivenotehed', $grnHed);
+        $err = $this->db->error();
+    if (!empty($err['code'])) {
+        $this->db->trans_rollback();
+        log_message('error', 'goodsreceivenotehed insert error: ' . print_r($err, true));
+        return ['status' => false, 'db_error' => $err, 'step' => 'insert_goodsreceivenotehed'];
+    }
         $this->update_max_code('Goods Received Note');
-        $this->db->update('codegenerate',array('AutoNumber'=>($maxSerialQty)),array('FormName'=>('AutoSerial')));
+        if (!empty($lastSerialNo)) {
+        $this->db->update('codegenerate',array('AutoNumber'=>($lastSerialNo)),array('FormName'=>('AutoSerial')));
+     $err = $this->db->error();
+        if (!empty($err['code'])) {
+            $this->db->trans_rollback();
+            log_message('error', 'codegenerate update error: ' . print_r($err, true));
+            return ['status' => false, 'db_error' => $err, 'step' => 'update_codegenerate'];
+        }    
+    }
         $this->db->trans_complete();
+
+
+
        return $this->db->trans_status();
     }
     
@@ -234,10 +480,10 @@ class Grn_model extends CI_Model {
                         ->get()->result();
     }
     
-       public function cancelGrn($cancelNo,$location,$canDate,$grnNo,$remark,$user,$supplier) {
+    public function cancelGrn($cancelNo,$location,$canDate,$grnNo,$remark,$user,$supplier) {
         $this->db->trans_start();
         $this->db->query("CALL SPT_CANCEL_GRN('$canDate','$grnNo','$user','$remark','$supplier','$cancelNo','$location')");
-         $isRawMat =0;
+        $isRawMat =0;
         $query = $this->db->get_where('goodsreceivenotedtl',array('GRN_No'=>$grnNo));
         if ($query->num_rows() > 0) {
             foreach ($query->result_array() as $row) {
@@ -246,20 +492,38 @@ class Grn_model extends CI_Model {
                 $price_levelArr=$row['GRN_PriceLevel'];
                 $cost_priceArr=$row['GRN_UnitCost'];
                 $sell_priceArr=$row['GRN_Selling'];
-//                $location=$row[''];
                 $serial_noArr=$row['SerialNo'];
+                $emi_noArr=$row['EmiNo'];
                 $freeQtyArr=$row['GRN_FreeQty'];
-
+                $isSeralArr=$row['IsSerial'];
+                $isEmiArr=$row['IsEmiNo'];
                 $isRawMat = $this->db->select('isRawMaterial')->from('productcondition')->where(array('ProductCode'=> $product_codeArr))->get()->row()->isRawMaterial;
-
-                
-                    $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr','$qtyArr','$price_levelArr','$cost_priceArr','$sell_priceArr','$location','$serial_noArr','$freeQtyArr','0','0')");
-                
-               
-            //update product previous cost
+                $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr','$qtyArr','$price_levelArr','$cost_priceArr','$sell_priceArr','$location','$serial_noArr','$freeQtyArr','0','0')");
                 $this->db->update('product',array('Prd_CostPrice'=>$cost_priceArr),array('ProductCode'=> $product_codeArr));
-            //update product stock
-            //$this->db->query("CALL SPT_UPDATE_PRO_STOCK('$product_codeArr','$totalGrnQty',0,'$location')");
+               
+               
+              if ($isSeralArr == 1 && $isEmiArr == 0) {
+    $this->db->delete('productserialstock', array(
+        'ProductCode' => $product_codeArr,
+        'Location' => $location,
+        'SerialNo' => $serial_noArr
+    ));
+}
+if ($isSeralArr == 0 && $isEmiArr == 1) {
+    $this->db->delete('productimeistock', array(
+        'ProductCode' => $product_codeArr,
+        'Location' => $location,
+        'EmiNo' => $emi_noArr
+    ));
+}
+if ($isSeralArr == 1 && $isEmiArr == 1) {
+    $this->db->delete('productserialemistock', array(
+        'ProductCode' => $product_codeArr,
+        'Location' => $location,
+        'SerialNo' => $serial_noArr
+    ));
+}
+
             }
         }
         
@@ -268,45 +532,105 @@ class Grn_model extends CI_Model {
        return $this->db->trans_status();
     }
     
-    public function loadstockAdjustment($route, $isall, $product = NULL) {
-        $this->db->select('product.ProductCode,
-                           product.Prd_Description,
-                           product.Prd_CostPrice,
-                           product.SubDepCode,
-                           product.Prd_ROL,
-                           product.Prd_ROQ,
-                           subdepartment.Description,
-                           location.location,
-                           productstock.Stock,
-                           productprice.ProductPrice,
-                           supplier.SupName');
-        $this->db->from('product');
-        $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'LEFT');
-        $this->db->join('productstock', 'productstock.ProductCode = product.ProductCode', 'LEFT');
-        $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
-        $this->db->join('productprice', 'productprice.ProductCode = product.ProductCode', 'LEFT');
-        $this->db->join('subcategory', 'subcategory.SubCategoryCode = product.SubCategoryCode', 'left');
-        $this->db->join('location', 'location.location_id = productstock.Location', 'INNER');
-        $this->db->where('product.Prd_IsActive', 1);
-        if (isset($route) && $route != '') {
-            $this->db->where_in('productstock.Location', $route);
-        }
-        if (isset($product) && $product != '' && $isall == 0) {
-            $this->db->where('product.ProductCode', $product);
-        }
+    public function loadstockAdjustment($route, $isall, $product = NULL)
+{
+    $this->db->distinct();
+    $this->db->select('product.ProductCode,
+                       product.Prd_Description,
+                       product.Prd_CostPrice,
+                       product.SubDepCode,
+                       product.Prd_ROL,
+                       product.Prd_ROQ,
+                       subdepartment.Description,
+                       location.location,
+                       productstock.Stock,
+                       product.Prd_SetAPrice,
+                       supplier.SupName');
+    $this->db->from('product');
+    $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'LEFT');
+    $this->db->join('productstock', 'productstock.ProductCode = product.ProductCode', 'LEFT');
+    $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
+    // $this->db->join('productprice', 'productprice.ProductCode = product.ProductCode', 'LEFT');
+    $this->db->join('subcategory', 'subcategory.SubCategoryCode = product.SubCategoryCode', 'LEFT');
+    $this->db->join('location', 'location.location_id = productstock.Location', 'INNER');
 
-        $this->db->order_by('product.DepCode', 'ASC');
-        $this->db->order_by('product.SubDepCode', 'ASC');
-        $this->db->order_by('product.CategoryCode', 'ASC');
-//        $this->db->order_by('product.SubCategoryCode', 'ASC');
-        $this->db->order_by('subcategory.Description', 'ASC');
+    $this->db->where('product.Prd_IsActive', 1);
 
-        $result=$this->db->get();
-
-        $list = array();
-        foreach ($result->result() as $row) {
-            $list[$row->Description][] = $row;
-        }
-        return $list;
+    if (!empty($route)) {
+        $this->db->where_in('productstock.Location', $route);
     }
+
+    if (!empty($product) && $isall == 0) {
+        $this->db->where('product.ProductCode', $product);
+    }
+
+    $this->db->order_by('product.DepCode', 'ASC');
+    $this->db->order_by('product.SubDepCode', 'ASC');
+    $this->db->order_by('product.CategoryCode', 'ASC');
+    $this->db->order_by('subcategory.Description', 'ASC');
+
+    $result = $this->db->get()->result();
+
+    $productCodes = array_map(function ($row) {
+        return $row->ProductCode;
+    }, $result);
+
+ 
+    $serialStock = [];
+    if (!empty($productCodes)) {
+        $query1 = $this->db->where_in('ProductCode', $productCodes)
+                           ->get('productserialstock')
+                           ->result();
+  
+        foreach ($query1 as $row) {
+            $serialStock[$row->ProductCode]['serials'][] = $row->SerialNo;
+        }
+    }
+
+   
+  
+    $emiStock = [];
+    if (!empty($productCodes)) {
+        $query2 = $this->db->where_in('ProductCode', $productCodes)
+                           ->get('productimeistock')
+                           ->result();
+
+                        
+        foreach ($query2 as $row) {
+            $emiStock[$row->ProductCode]['emei'][] = $row->EmiNo;
+        }
+    }
+
+    // Merge into final output
+    $list = [];
+    foreach ($result as $row) {
+
+        $pcode = $row->ProductCode;
+
+        $row->serial_list = isset($serialStock[$pcode]['serials'])
+                            ? $serialStock[$pcode]['serials']
+                            : [];
+
+        $row->emei_list   = isset($emiStock[$pcode]['emei'])
+                            ? $emiStock[$pcode]['emei']
+                            : [];
+
+        $list[$row->Description][] = $row;
+    }
+
+    return $list;
+}
+
+
+public function getEmeiStocktoProduct($emei, $productCode)
+{
+    return $this->db->select('Quantity')
+                    ->from('productimeistock')
+                    ->where('EmiNo', $emei)
+                    ->where('ProductCode', $productCode)
+                    ->get()
+                    ->row();
+}
+
+
 }

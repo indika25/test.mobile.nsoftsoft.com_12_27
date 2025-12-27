@@ -537,4 +537,48 @@ foreach($row as $country => $cities) {
         return $this->db->select()->from('stockdateuser')->where('id', $maxid)->get()->row();
     }
 
+    public function updateStock($productCode, $location, $quantity, $sellPrice) {
+      
+        $priceStock = $this->db->select('Price, Stock')
+            ->from('pricestock')
+            ->where('PSCode', $productCode)
+            ->where('WholesalesPrice', $sellPrice)
+            ->where('PSLocation', $location)
+            ->get()
+            ->row();
+        // echo var_dump($sellPrice);die;
+        if ($priceStock) {
+            $newStock = $priceStock->Stock + $quantity; 
+            $this->db->update(
+                'pricestock',
+                ['Stock' => $newStock],
+                [
+                    'PSCode' => $productCode,
+                    'PSLocation' => $location,
+                    'Price' => $priceStock->Price
+                ]
+            );
+        }
+
+       
+        $productStock = $this->db->select('Stock')
+            ->from('productstock')
+            ->where('ProductCode', $productCode)
+            ->where('Location', $location)
+            ->get()
+            ->row();
+
+        if ($productStock) {
+            $newProStock = $productStock->Stock + $quantity;
+            $this->db->update(
+                'productstock',
+                ['Stock' => $newProStock],
+                [
+                    'ProductCode' => $productCode,
+                    'Location' => $location
+                ]
+            );
+        }
+    }
+
 }

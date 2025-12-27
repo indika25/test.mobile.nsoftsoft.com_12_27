@@ -66,6 +66,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                         <th>Product Code</th>
                                         <th>Product Name</th>
                                         <th>Serial No</th>
+                                        <th>IEMI No</th>
                                         <th>Total Quantity</th>
                                         <th>Unit/Case</th>
                                         <th>Unit Cost</th>
@@ -81,6 +82,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                     <td><?php echo $prndata->PRN_Product ?></td>
                                     <td ><?php echo $prndata->Prd_Description ?></td>
                                     <td ><?php echo $prndata->Serial ?></td>
+                                    <td ><?php echo $prndata->EmiNo ?></td>
                                     <td class="text-right"><?php echo number_format($prndata->PRN_Qty,2) ?></td>
                                     <td class="text-right"><?php echo ($prndata->PRN_UPCType) ?></td>
                                     <td class="text-right"><?php echo number_format($prndata->PRN_UnitCost,2) ?></td>

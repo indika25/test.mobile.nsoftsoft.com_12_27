@@ -17,13 +17,13 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="product" class="control-label">Part No <span class="required">*</span></label>
-                            <input type="text" class="form-control" required="required"  name="part_no" id="part_no" placeholder="Enter Part No">
+                            <input type="text" class="form-control" required="required"  name="part_no" id="part_no" placeholder="Enter Part No" readonly>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="product" class="control-label">Mercedes Part No <span class="required">*</span></label>
-                    <input type="text" class="form-control" required="required"  name="orgpart_no" id="orgpart_no" placeholder="Enter Mercedes Part No">
+                    <input type="text" class="form-control" required="required"  name="orgpart_no" id="orgpart_no" placeholder="Enter Mercedes Part No" readonly>
                 </div>
                 
                 
@@ -86,6 +86,15 @@
                         <div class="input-group" id="edpanel_dep1">
                             <input type="text" class="form-control pull-right" name="edep1" id="edep1">
                             <span class="input-group-btn"><button class="btn btn-primary" id="editDep1">Update</button></span>
+                        </div>
+
+                        <label for="cateogry" class="control-label">Department Discount</label>
+                        <div class="input-group" style="width: 200px;">
+                            <input class="form-control" type="int" name="depDiscount"  id="depDiscount" placeholder="Enter Discount percentage"/>
+                            <span class="input-group-btn">
+                                <button class="btn btn-warning" id="addDepdisbtn"><i class="fa fa-plus"></i></button>
+                                
+                            </span>
                         </div>
 
                     </div>
@@ -207,27 +216,28 @@
 <!--                            </label>-->
 <!--                        </div>-->
                     </div>
-<!--                    <div class="col-md-4">-->
-<!--                        <div class="form-group">-->
-<!--                            <label for="ismultiprice" class="control-label">-->
-<!--                                <input class="prd_icheck" type="checkbox" name="ismultiprice" value="1"> -->
-<!--                                Is Multi Price-->
-<!--                            </label>-->
-<!--                        </div>-->
+                   <!-- <div class="col-md-4"> -->
+                       <div class="form-group">
+                           <label for="ismultiprice" class="control-label">
+                               <input class="prd_icheck" type="checkbox" name="ismultiprice" value="1">
+                               Is Multi Price
+                           </label>
+                       </div>
                         <div class="form-group">
                             <label for="isserialno" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="isserialno" value="1"> 
                                 Is Serial No
                             </label>
                         </div>
-<!--                        <div class="form-group">-->
-<!--                            <label for="israwmaterial" class="control-label">-->
-<!--                                <input class="prd_icheck" type="checkbox" name="israwmaterial" value="1"> -->
-<!--                                 Is Raw Mtr-->
-<!--                            </label>-->
-<!--                        </div>-->
-<!--                    </div>-->
+                      
+                   <!-- </div> -->
                     <div class="col-md-4">
+                         <div class="form-group">
+                           <label for="israwmaterial" class="control-label">
+                               <input class="prd_icheck" type="checkbox" name="israwmaterial" value="1">
+                                Is Emi No
+                           </label>
+                       </div>
 <!--                        <div class="form-group">-->
 <!--                            <label for="isfraction" class="control-label">-->
 <!--                                <input class="prd_icheck" type="checkbox" name="isfraction" value="1"> -->
@@ -240,30 +250,30 @@
 <!--                                Is Free Issue-->
 <!--                            </label>-->
 <!--                        </div>-->
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label for="isfreeissue" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="isvat" value="1"> 
                                 Is VAT
                             </label>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-4">
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label for="isfraction" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="isnbt" id="isnbt" value="1"> 
                                 Is NBT
                             </label>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="col-md-4">
-                        <div class="form-group" id="nbtratioDiv">
+                        <!-- <div class="form-group" id="nbtratioDiv">
                             <label for="isfreeissue" class="control-label">
                                     NBT Ratio
                             </label>
                             <input class="form-control input-sm" type="text" id="nbtratio" name="nbtratio" value="1"> 
-                        </div>
+                        </div> -->
                     </div>
                     <div class="col-md-4"> </div>
                 </div>
@@ -351,6 +361,15 @@
                                                             <input type="number" class="form-control"  name="sellingprice" id="sellingprice">
                                                         </div>-->
                         </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="productCode" class="control-label">Branch Cost Price<span class="required">*</span></label>
+                                <input type="text" class="form-control" required="required" min="0" value="0" name="branchCostprice" id="branchCostprice">
+                            </div>
+                        </div>
+
                     </div>
                     <div class="form-group">
                         <label for="pricelevel" class="control-label">Price level <span class="required">*</span></label>
@@ -657,6 +676,23 @@
                 });
             }
         });
+
+        if (s_dep !== '' && s_dep !== '0') {
+            $.ajax({
+                url: "<?php echo base_url('admin/master/getDepDiscount/') ?>",
+                type: 'POST',
+                data: { department: s_dep },
+                success: function(resp) {
+                    resp = JSON.parse(resp);
+
+                    if (resp.fb === true) {
+                        $("#depDiscount").val(resp.discount);
+                    } else {
+                        $("#depDiscount").val(''); 
+                    }
+                }
+            });
+        }
     });
     
     $('#sub_department').change(function() {
@@ -709,6 +745,12 @@
 
     $('#addproductform').submit(function(e) {
         e.preventDefault();
+       let sup = $('#supplier').val();
+ if(sup==0){
+$.notify("Plese select Supplier", "error");
+return;
+ }
+
         $('#savepro').attr('disabled', true);
         $.ajax({
             url: "<?php echo base_url('admin/product/add_product/') ?>",
@@ -1264,6 +1306,45 @@
         $("#loc_array").val(JSON.stringify(loc_array));
         $("#rack_array").val(JSON.stringify(rack_array));
         $("#bin_array").val(JSON.stringify(bin_array));
+    });
+
+    
+    $('#addDepdisbtn').click(function(e) {
+        e.preventDefault(); 
+
+        var department = $("#department").val();
+        var depDiscount = $("#depDiscount").val();
+
+        if (department === "0" || department === "" || department === null) {
+   
+            $.notify("Please select a department.", "warning");
+            $("#department").focus();
+            return false;
+        }
+
+        if (depDiscount === "" || depDiscount === null) {
+   
+            $.notify("Please Enter Valid Discount.", "warning");
+            $("#depDiscount").focus();
+            return false;
+        }
+        $.ajax({
+                type: "post",
+                url: "<?php echo base_url(); ?>" + "admin/master/depDiscount",
+                data: {department:department,depDiscount:depDiscount},
+                success: function (json) {
+                    var resultData = JSON.parse(json);
+                     if (resultData.fb === true) {
+                        $.notify(resultData.msg, "success");
+                    } else {
+                        $.notify(resultData.msg, "error");
+                    }
+                },
+                error: function () {
+                    alert('Error while request..');
+                }
+            });
+        e.preventDefault();
     });
     
 </script>

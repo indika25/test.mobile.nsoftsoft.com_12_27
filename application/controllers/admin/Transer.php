@@ -49,8 +49,7 @@ class Transer extends Admin_Controller {
     
     public function saveStockOut() {
         $barcode = 1;
-//        var_dump($_POST);die;
-//        $this->load->model('admin/Transer_model');
+
         $grnNo = $this->Transer_model->get_max_code('Transfer Out');
         $remark = $_POST['grnremark'];
         $invDate = $_POST['grnDate'];

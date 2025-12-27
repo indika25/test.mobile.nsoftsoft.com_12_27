@@ -116,6 +116,7 @@ class Salesinvoice_model extends CI_Model {
         $qtyArr = json_decode($post['qty']);
         $sell_priceArr = json_decode($post['unit_price']);
         $orgSell_priceArr = json_decode($post['org_unit_price']);
+       
         $cost_priceArr = json_decode($post['cost_price']);
         $pro_discountArr = json_decode($post['pro_discount']);
         $pro_discount_precentArr = json_decode($post['discount_precent']);
@@ -123,6 +124,8 @@ class Salesinvoice_model extends CI_Model {
         $upcArr = json_decode($post['upc']);
         $total_netArr = json_decode($post['total_net']);
         $price_levelArr = json_decode($post['price_level']);
+        $tofindSellPrice = json_decode($post['price_level'], true);
+        
         $totalAmountArr = json_decode($post['pro_total']);
         $isSerialArr = json_decode($post['isSerial']);
         $isVatArr = json_decode($_POST['isVat']);
@@ -133,6 +136,8 @@ class Salesinvoice_model extends CI_Model {
         $proNameArr = json_decode($_POST['proName']);
         $salesPersonArr = json_decode($_POST['salePerson']);
         $warrantytypeArr = json_decode($_POST['warrantytype']);
+        
+
         $location = $post['location'];
         $customerPonumber = $post['po_number'];
         $mchange = $post['mchange'];
@@ -140,6 +145,8 @@ class Salesinvoice_model extends CI_Model {
         $total_Advanceamount = $post['advance_amount'];
         $isRawMat =0;
         $totalCost = 0;
+        $emi_noArr = json_decode($post['emi_no']);
+        $isEmiArr = json_decode($post['isEmi']);
 
         $this->db->trans_start();
 
@@ -182,22 +189,41 @@ class Salesinvoice_model extends CI_Model {
                     'SalesPerson' => $salesPersonArr[$i],
                     'SalesPerson' => $salesPersonArr[$i],
                     'WarrantyMonthNew'=>$warrantytypeArr[$i],
-                    'SellingPriceORG'=>$orgSell_priceArr[$i]
+                    'SellingPriceORG'=>$orgSell_priceArr[$i],
+                    'EmiNo'=>$emi_noArr[$i],
+                    'IsEmi'=>$isEmiArr[$i],
+                    'IsSerial'=>$isSerialArr[$i],
                 );
-            $this->db->insert('salesinvoicedtl', $grnDtl);
+         $this->db->insert('salesinvoicedtl', $grnDtl);
+$this->_dbError("insert salesinvoicedtl line $i");
+
             $sellPrice =0;
 
+          
             if($sell_priceArr[$i]==0){
                 $sellPrice=$orgSell_priceArr[$i];
             }else{
                 $sellPrice=$sell_priceArr[$i];
             }
-            //update stock
-             $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','$price_levelArr[$i]','$cost_priceArr[$i]','$sellPrice','$location','$serial_noArr[$i]','$freeQtyArr[$i]','0','0')");
 
-            //update serial stock
-            if($serial_noArr[$i]!=''){
-                 $this->db->update('productserialstock',array('Quantity'=>0),array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=> $serial_noArr[$i]));
+            if (!empty($tofindSellPrice) && $tofindSellPrice[0] == "2") {
+                $this->Stock_model->updateStock($product_codeArr[$i], $location, -$qtyArr[$i], $orgSell_priceArr[$i]);
+          $this->_dbError("update");
+            }else{
+ $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','1','$cost_priceArr[$i]','$orgSell_priceArr[$i]','$location','$serial_noArr[$i]','$freeQtyArr[$i]','0','0')");
+$this->_dbError("call procudure");           
+}
+
+        
+            if($isSerialArr[$i]== 1 && $isEmiArr[$i] == 0){
+                $this->db->update('productserialstock',array('Quantity'=>0),array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=> $serial_noArr[$i]));
+            }
+
+            if($isSerialArr[$i]== 0 && $isEmiArr[$i] == 1){
+                $this->db->update('	productimeistock',array('Quantity'=>0),array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'EmiNo'=> $emi_noArr[$i]));
+            }
+            if($isSerialArr[$i]== 1 && $isEmiArr[$i] == 1){
+                $this->db->update('productserialemistock',array('Quantity'=>0),array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=> $serial_noArr[$i]));
             }
         }
         
@@ -228,6 +254,7 @@ class Salesinvoice_model extends CI_Model {
         // insert invoice payment
         if($cashAmount>0){
              $this->db->insert('salesinvoicepaydtl', $cashPay);
+             $this->_dbError("sales invoice paydtl");
          }
          
          $advancePay = array(
@@ -243,10 +270,10 @@ class Salesinvoice_model extends CI_Model {
         // insert invoice payment
         if($advanceAmount>0){
              $this->db->insert('salesinvoicepaydtl', $advancePay);
-
+  $this->_dbError("sales invoice paydtl");
              //release advance payment
              $this->db->update('customerpaymentdtl',array('IsRelease'=>1),array('CusPayNo'=>$advancePayNo));
-
+  $this->_dbError("customerpayment");
          }
 
          if ($total_Advanceamount > $total_Netamount) {
@@ -285,8 +312,11 @@ class Salesinvoice_model extends CI_Model {
 
              //update customer payment
             $this->db->insert('customerpaymenthed', $cpHed);
+              $this->_dbError("customerpaymenthed");
             //update customer payment
             $this->db->insert('customerpaymentdtl', $cpDtl);
+              $this->_dbError("customerpaymentdtl");
+
 
              $this->update_max_code('Customer Payment');
 
@@ -435,7 +465,8 @@ class Salesinvoice_model extends CI_Model {
              $this->db->insert('creditinvoicedetails',$invCredit);
              //update customer outsatnding
              $this->db->query("CALL SPT_UPDATE_CUSOUTSTAND('$cusCode','$invnetAmount','$creditAmount')");
-
+$this->_dbError("customerpaymentdtl");
+              
          }
         
         $grnHed['SalesCostAmount'] = $totalCost;
@@ -463,6 +494,14 @@ class Salesinvoice_model extends CI_Model {
         $this->db->trans_complete();
        return $this->db->trans_status();
     }
+private function _dbError($msg) {
+    $err = $this->db->error();
+    if (!empty($err['code'])) {
+        echo "<pre>ERROR at: $msg\n";
+        print_r($err);
+        echo "</pre>";
+    }
+}
 
     public function updateSalesInvoice($grnHed,$post,$grnNo,$totalDisPrecent) {        
         $product_codeArr = json_decode($post['product_code']);
@@ -519,7 +558,7 @@ class Salesinvoice_model extends CI_Model {
                                 $selp = $row['SalesUnitPrice'];
 
                             //update price stock
-                           $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
+                           $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','1','$costp','$selp','$loc')");
 
                             //update product stock
                            $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')"); 
@@ -583,7 +622,7 @@ class Salesinvoice_model extends CI_Model {
                     'SalesSerialNo' => $serial_noArr[$i],
                     'SalesProductName' => $proNameArr[$i],
                     'SalesQty' => $qtyArr[$i],
-                    'SalesPriceLevel' => $price_levelArr[$i],
+                    'SalesPriceLevel' => 1,
                     'SalesFreeQty' => $freeQtyArr[$i],
                     'SalesCostPrice' => $cost_priceArr[$i],
                     'SalesUnitPrice' => $sell_priceArr[$i],
@@ -610,7 +649,7 @@ class Salesinvoice_model extends CI_Model {
                 $sellPrice=$sell_priceArr[$i];
             }
             //update stock
-             $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','$price_levelArr[$i]','$cost_priceArr[$i]','$sellPrice','$location','$serial_noArr[$i]','$freeQtyArr[$i]','0','0')");
+             $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','1','$cost_priceArr[$i]','$sellPrice','$location','$serial_noArr[$i]','$freeQtyArr[$i]','0','0')");
 
             //update serial stock
             if($serial_noArr[$i]!=''){
@@ -944,9 +983,10 @@ class Salesinvoice_model extends CI_Model {
     }
 
     public function getSalesInvoiceDtlbyid($invNo) {
-        $this->db->select('salesinvoicedtl.*,product.*');
+        $this->db->select('salesinvoicedtl.*,product.*,warranty_typs.*');
         $this->db->from('salesinvoicedtl');
         $this->db->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode', 'left');
+        $this->db->join('warranty_typs', 'salesinvoicedtl.WarrantyMonthNew = warranty_typs.id', 'LEFT');
         $this->db->where('salesinvoicedtl.SalesInvNo', $invNo);
         $this->db->where('salesinvoicedtl.SalesReturnQty',0);
         $this->db->order_by('salesinvoicedtl.SalesInvLineNo','ASC');
@@ -1065,5 +1105,353 @@ class Salesinvoice_model extends CI_Model {
 
     public function selectOdoout($id) {
         return $this->db->select()->from('tempjobinvoicehed')->where('JobInvNo',$id)->get()->result();
+    }
+
+   public function saveIssueNote($grnHed,$post,$grnNo,$totalDisPrecent) {
+
+    $location = $_SESSION['location'];
+    $product_codeArr = json_decode($post['product_code']);
+    $unitArr = json_decode($post['unit_type']);
+    $freeQtyArr = json_decode($post['freeQty']);
+    $serial_noArr = json_decode($post['serial_no']);
+    $qtyArr = json_decode($post['qty']);
+    $sell_priceArr = json_decode($post['unit_price']);
+    $orgSell_priceArr = json_decode($post['org_unit_price']);
+    $cost_priceArr = json_decode($post['cost_price']);
+    $pro_discountArr = json_decode($post['pro_discount']);
+    $pro_discount_precentArr = json_decode($post['discount_precent']);
+    $caseCostArr = json_decode($post['case_cost']);
+    $upcArr = json_decode($post['upc']);
+    $total_netArr = json_decode($post['total_net']);
+    $price_levelArr = json_decode($post['price_level']);
+    $tofindSellPrice = json_decode($post['price_level'], true);
+    $totalAmountArr = json_decode($post['pro_total']);
+    $isSerialArr = json_decode($post['isSerial']);
+    $isVatArr = json_decode($_POST['isVat']);
+    $isNbtArr = json_decode($_POST['isNbt']);
+    $nbtRatioArr = json_decode($_POST['nbtRatio']);
+    $proVatArr = json_decode($_POST['proVat']);
+    $proNbtArr = json_decode($_POST['proNbt']);
+    $proNameArr = json_decode($_POST['proName']);
+    $salesPersonArr = json_decode($_POST['salePerson']);
+    $emi_noArr = json_decode($post['emi_no']);
+    $isEmiArr = json_decode($post['isEmi']);
+
+    $totalCost = 0;
+
+    $this->db->trans_start();
+
+    for ($i = 0; $i < count($product_codeArr); $i++) {
+
+        $WarrantyMonth = $this->db->select('WarrantyPeriod')
+            ->from('productcondition')
+            ->where('ProductCode',$product_codeArr[$i])
+            ->get()
+            ->row()->WarrantyPeriod;
+
+        $grnDtl = array(
+            'AppNo' => '1',
+            'SalesInvNo' => $grnNo,
+            'SalesInvLineNo' => $i,
+            'SalesInvLocation' => $location,
+            'SalesInvDate'=> $grnHed['SalesDate'],
+            'SalesProductCode' => $product_codeArr[$i],
+            'SalesUnitPerCase' => $upcArr[$i],
+            'SalesCaseOrUnit' => $unitArr[$i],
+            'SalesSerialNo' => $serial_noArr[$i],
+            'SalesProductName' => $proNameArr[$i],
+            'SalesQty' => $qtyArr[$i],
+            'SalesPriceLevel' => $price_levelArr[$i],
+            'SalesFreeQty' => $freeQtyArr[$i],
+            'SalesCostPrice' => $cost_priceArr[$i],
+            'SalesUnitPrice' => $sell_priceArr[$i],
+            'SalesDisValue' => $pro_discountArr[$i],
+            'SalesDisPercentage' => $pro_discount_precentArr[$i],
+            'SalesIsVat' => $isVatArr[$i],
+            'SalesIsNbt' => $isNbtArr[$i],
+            'SalesNbtRatio' => $nbtRatioArr[$i],
+            'SalesVatAmount' => $proVatArr[$i],
+            'SalesNbtAmount' => $proNbtArr[$i],
+            'SalesTotalAmount' => $totalAmountArr[$i],
+            'SalesInvNetAmount' => $total_netArr[$i],
+            'SalesPerson' => $salesPersonArr[$i],
+            'WarrantyMonth'=>$WarrantyMonth,
+            'SellingPriceORG'=>$orgSell_priceArr[$i],
+            'JobNo'=>$grnHed['SalesPONumber'],
+            'EmiNo'=>$emi_noArr[$i],
+            'IsEmi'=>$isEmiArr[$i],
+            'IsSerial'=>$isSerialArr[$i],
+        );
+
+        // INSERT issuenote_dtl
+        $this->db->insert('issuenote_dtl', $grnDtl);
+        if ($this->db->error()['code'] != 0) {
+            return [
+                "success" => false,
+                "action" => "insert issuenote_dtl line $i",
+                "error"  => $this->db->error()
+            ];
+        }
+
+        // STOCK UPDATE
+        if (!empty($tofindSellPrice) && $tofindSellPrice[0] == "2") {
+
+            $this->Stock_model->updateStock($product_codeArr[$i], $location, -$qtyArr[$i], $sell_priceArr[$i]);
+
+        } else {
+
+            $this->db->query(
+                "CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','1','$cost_priceArr[$i]','$sell_priceArr[$i]','$location','$serial_noArr[$i]','$freeQtyArr[$i]','0','0')"
+            );
+
+            if ($this->db->error()['code'] != 0) {
+                return [
+                    "success" => false,
+                    "action" => "CALL SPP_UPDATE_PRICE_STOCK line $i",
+                    "error"  => $this->db->error()
+                ];
+            }
+        }
+
+        // SERIAL STOCK
+        if ($isSerialArr[$i] == 1 && $isEmiArr[$i] == 0) {
+
+            $this->db->update('productserialstock',['Quantity'=>0],[
+                'ProductCode'=> $product_codeArr[$i],
+                'Location'=> $location,
+                'SerialNo'=> $serial_noArr[$i]
+            ]);
+
+            if ($this->db->error()['code'] != 0) {
+                return [
+                    "success" => false,
+                    "action" => "update productserialstock line $i",
+                    "error"  => $this->db->error()
+                ];
+            }
+        }
+
+        if ($isSerialArr[$i] == 0 && $isEmiArr[$i] == 1) {
+
+            $this->db->update('productimeistock',['Quantity'=>0],[
+                'ProductCode'=> $product_codeArr[$i],
+                'Location'=> $location,
+                'EmiNo'=> $emi_noArr[$i]
+            ]);
+
+            if ($this->db->error()['code'] != 0) {
+                return [
+                    "success" => false,
+                    "action" => "update productimeistock line $i",
+                    "error"  => $this->db->error()
+                ];
+            }
+        }
+
+        if ($isSerialArr[$i] == 1 && $isEmiArr[$i] == 1) {
+
+            $this->db->update('productserialemistock',['Quantity'=>0],[
+                'ProductCode'=> $product_codeArr[$i],
+                'Location'=> $location,
+                'SerialNo'=> $serial_noArr[$i]
+            ]);
+
+            if ($this->db->error()['code'] != 0) {
+                return [
+                    "success" => false,
+                    "action" => "update productserialemistock line $i",
+                    "error"  => $this->db->error()
+                ];
+            }
+        }
+    }
+
+    // INSERT HEADER
+    $this->db->insert('issuenote_hed', $grnHed);
+    if ($this->db->error()['code'] != 0) {
+        return [
+            "success" => false,
+            "action" => "insert issuenote_hed",
+            "error"  => $this->db->error()
+        ];
+    }
+
+    $SalesInvType = ($_POST['creditAmount'] > 0) ? 3 : $_POST['invType'];
+
+    $this->update_max_code('IssueNoteNo');
+
+    $this->db->trans_complete();
+    return $this->db->trans_status();
+}
+
+
+    public function updateIssueNote($grnHed,$post,$grnNo,$totalDisPrecent) {
+        $location = $_SESSION['location'];
+        $product_codeArr = json_decode($post['product_code']);
+        $unitArr = json_decode($post['unit_type']);
+        $freeQtyArr = json_decode($post['freeQty']);
+        $serial_noArr = json_decode($post['serial_no']);
+        $qtyArr = json_decode($post['qty']);
+        $sell_priceArr = json_decode($post['unit_price']);
+        $orgSell_priceArr = json_decode($post['org_unit_price']);
+        $cost_priceArr = json_decode($post['cost_price']);
+        $pro_discountArr = json_decode($post['pro_discount']);
+        $pro_discount_precentArr = json_decode($post['discount_precent']);
+        $caseCostArr = json_decode($post['case_cost']);
+        $upcArr = json_decode($post['upc']);
+        $total_netArr = json_decode($post['total_net']);
+        $price_levelArr = json_decode($post['price_level']);
+        $totalAmountArr = json_decode($post['pro_total']);
+        $isSerialArr = json_decode($post['isSerial']);
+        $isVatArr = json_decode($_POST['isVat']);
+        $isNbtArr = json_decode($_POST['isNbt']);
+        $nbtRatioArr = json_decode($_POST['nbtRatio']);
+        $proVatArr = json_decode($_POST['proVat']);
+        $proNbtArr = json_decode($_POST['proNbt']);
+        $proNameArr = json_decode($_POST['proName']);
+        $salesPersonArr = json_decode($_POST['salePerson']);
+        $emi_noArr = json_decode($post['emi_no']);
+        $isEmiArr = json_decode($post['isEmi']);
+        $location = $location;
+        $isRawMat =0;
+        $totalCost = 0;
+
+        $this->db->trans_start();
+        //product stock rollback
+        $invLocation = $this->db->select('SalesLocation')->from('issuenote_hed')->where('SalesInvNo',$grnNo)->get()->row()->SalesLocation;
+        $query = $this->db->get_where('issuenote_dtl', array('SalesInvNo' => $grnNo));
+        if ($query->num_rows() > 0) {
+            foreach ($query->result_array() as $row) {
+                //update serial stock
+                $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode' => $row['SalesProductCode'], 'SerialNo' => $row['SalesSerialNo'], 'Location' => $row['SalesInvLocation']))->get();
+                if ($ps->num_rows() > 0) {
+                    $isPro = $this->db->select('SalesProductCode')->from('issuenote_dtl')->where(array('SalesProductCode' => $row['SalesProductCode'], 'SalesSerialNo' => $row['SalesSerialNo'], 'SalesInvLocation' => $row['SalesInvLocation'],'SalesInvNo' => $grnNo))->get();
+                    // echo $isPro->num_rows();die;
+                    if ($isPro->num_rows() > 0) {
+                        $this->db->update('productserialstock', array('Quantity' => 1), array('ProductCode' => $row['SalesProductCode'], 'SerialNo' => $row['SalesSerialNo']));
+                    }
+                } else {
+
+                }
+
+                $proCode = $row['SalesProductCode'];
+                $totalGrnQty = $row['SalesQty'];
+                $loc = $row['SalesInvLocation'];
+                $pl = $row['SalesPriceLevel'];
+                $costp = $row['SalesCostPrice'];
+                $selp = $row['SalesUnitPrice'];
+
+                //update price stock
+                //$this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
+
+                //update product stock
+                //$this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
+                // }
+            }
+        }
+
+        $this->db->delete('issuenote_dtl', array('SalesInvNo' => $grnNo));
+        $this->bincard($grnNo,1,'Updated');//update bincard
+        $this->db->trans_complete();
+        $del=$this->db->trans_status();
+
+        // echo $del;die;
+
+        if($del=1){
+            $this->db->trans_start();
+            //
+            for ($i = 0; $i < count($product_codeArr); $i++) {
+                $totalGrnQty = ($qtyArr[$i]+$freeQtyArr[$i]);
+                $qtyPrice = $total_netArr[$i]/$qtyArr[$i];
+
+                $totalCost += ($qtyArr[$i]*$cost_priceArr[$i]);
+
+                //get warranty period
+                $WarrantyMonth = 0;
+
+                //insert sales invoice details
+                $grnDtl = array(
+                    'AppNo' => '1',
+                    'SalesInvNo' => $grnNo,
+                    'SalesInvLineNo' => $i,
+                    'SalesInvLocation' => $location,
+                    'SalesInvDate'=> $grnHed['SalesOrgDate'],
+                    'SalesProductCode' => $product_codeArr[$i],
+                    'SalesUnitPerCase' => $upcArr[$i],
+                    'SalesCaseOrUnit' => $unitArr[$i],
+                    'SalesSerialNo' => $serial_noArr[$i],
+                    'SalesProductName' => $proNameArr[$i],
+                    'SalesQty' => $qtyArr[$i],
+                    'SalesPriceLevel' => $price_levelArr[$i],
+                    'SalesFreeQty' => $freeQtyArr[$i],
+                    'SalesCostPrice' => $cost_priceArr[$i],
+                    'SalesUnitPrice' => $sell_priceArr[$i],
+                    'SalesDisValue' => $pro_discountArr[$i],
+                    'SalesDisPercentage' => $pro_discount_precentArr[$i],
+                    'SalesIsVat' => $isVatArr[$i],
+                    'SalesIsNbt' => $isNbtArr[$i],
+                    'SalesNbtRatio' => $nbtRatioArr[$i],
+                    'SalesVatAmount' => $proVatArr[$i],
+                    'SalesNbtAmount' => $proNbtArr[$i],
+                    'SalesTotalAmount' => $totalAmountArr[$i],
+                    'SalesInvNetAmount' => $total_netArr[$i],
+                    'SalesPerson' => $salesPersonArr[$i],
+                    'WarrantyMonth'=>$WarrantyMonth,
+                    'SellingPriceORG'=>$orgSell_priceArr[$i],
+                    'JobNo'=>$grnHed['SalesPONumber'],
+                    'EmiNo'=>$emi_noArr[$i],
+                    'IsEmi'=>$isEmiArr[$i],
+                    'IsSerial'=>$isSerialArr[$i],
+                );
+                $this->db->insert('issuenote_dtl', $grnDtl);
+                $sellPrice =0;
+
+                if($sell_priceArr[$i]==0){
+                    $sellPrice=$orgSell_priceArr[$i];
+                }else{
+                    $sellPrice=$sell_priceArr[$i];
+                }
+                //update stock
+                $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','$price_levelArr[$i]','$cost_priceArr[$i]','$sellPrice','$location','$serial_noArr[$i]','$freeQtyArr[$i]','0','0')");
+
+                //update serial stock
+                if($serial_noArr[$i]== 1 && $isEmiArr[$i] == 0){
+                    $this->db->update('productserialstock',array('Quantity'=>0),array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=> $serial_noArr[$i]));
+                }
+
+                if($serial_noArr[$i]== 0 && $isEmiArr[$i] == 1){
+                    $this->db->update('	productimeistock',array('Quantity'=>0),array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'EmiNo'=> $emi_noArr[$i]));
+                }
+                if($serial_noArr[$i]== 1 && $isEmiArr[$i] == 1){
+                    $this->db->update('productserialemistock',array('Quantity'=>0),array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'SerialNo'=> $serial_noArr[$i]));
+                }
+            }
+
+
+            $grnHed['SalesCostAmount'] = $totalCost;
+            $updateTimestmp = date("Y-m-d H:i:s");
+
+            $invupdate = array(
+                'AppNo' => '1',
+                'InvoiceNo'=>$grnNo,
+                'EditType'=>1,
+                'Location'=>$location,
+                'UpdateDate'=>$updateTimestmp,
+                'Remark'=>'Update',
+                'UpdateUser'=>$_SESSION['user_id']);
+
+            $this->db->insert('editinvoices',$invupdate);
+            $this->db->update('issuenote_hed', $grnHed,array('SalesInvNo' => $grnNo));
+            $creditAmount = $_POST['creditAmount'];
+            if($creditAmount>0){
+                $SalesInvType=3;
+            }else{
+                $SalesInvType=$_POST['invType'];
+            }
+
+            $this->db->trans_complete();
+            return $this->db->trans_status();
+
+        }
     }
 }

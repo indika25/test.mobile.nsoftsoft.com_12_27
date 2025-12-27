@@ -24,7 +24,7 @@
                 <td  id="lblinvDate"> &nbsp;</td>
             </tr>
             <tr style="text-align:left;font-size:13px;">
-                <td> Addressaaa</td>
+                <td> Address</td>
                 <td> :</td>
                 <td rowspan="3" id="lblAddress" valign="top"> &nbsp;</td>
                 <td> Tel</td>

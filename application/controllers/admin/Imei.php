@@ -156,11 +156,11 @@ class Imei extends Admin_Controller {
     public function getProductByBarCode() {
         $dep = $_POST['proCode'];
         $location = $_POST['location'];
-       $arr['stock']  = $this->Imei_model->loadproductlocbyserial($dep, $location);
-       $arr['product']  = $this->Imei_model->loadproductbyserial($dep, $location);
-       $arr['sale']  = $this->Imei_model->loadsalebyserial($dep, $location);
-       $arr['trans']  = $this->Imei_model->loadtranserbyserial($dep, $location);
-//       $arr['loc'] =$this->Imei_model->loadlocations();
+        $arr['stock']  = $this->Imei_model->loadproductlocbyserial($dep, $location);
+        $arr['product']  = $this->Imei_model->loadproductbyserial($dep, $location);
+        $arr['sale']  = $this->Imei_model->loadsalebyserial($dep, $location);
+        $arr['trans']  = $this->Imei_model->loadtranserbyserial($dep, $location);
+     
         echo json_encode($arr);
         die;
     }

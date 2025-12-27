@@ -9,6 +9,7 @@ class Job extends Admin_Controller {
         /* Load :: Common */
         $this->load->helper('number');
         $this->load->model('admin/Job_model');
+        $this->load->model('admin/Stock_model');
         date_default_timezone_set("Asia/Colombo");
         $title='';
         $titleno='';
@@ -189,7 +190,10 @@ class Job extends Admin_Controller {
             $location =  $this->db->select('JLocation')->from('jobcardhed')->where('JobCardNo',$jno)->get()->row()->JLocation;
             $appoimnetDate =$this->db->select('appoimnetDate')->from('jobcardhed')->where('JobCardNo', $jno)->get()->row()->appoimnetDate;
             $this->data['invCus']= $this->db->select('customer.*')
-                ->from('customer')->join('vehicledetail','vehicledetail.CusCode=customer.CusCode')->join('paytype','paytype.payTypeId=customer.payMethod')->where('customer.CusCode',$cusCode)->get()->row();
+                ->from('customer')
+//                ->join('vehicledetail','vehicledetail.CusCode=customer.CusCode')
+                ->join('paytype','paytype.payTypeId=customer.payMethod')
+                ->where('customer.CusCode',$cusCode)->get()->row();
             $this->data['invVehi']= $this->db->select('vehicledetail.ChassisNo,vehicledetail.contactName,make.make,model.model,vehicledetail.Color AS body_color,fuel_type.fuel_type')->from('vehicledetail')->join('make','make.make_id=vehicledetail.Make','left')->join('fuel_type','fuel_type.fuel_typeid=vehicledetail.FuelType','left')->join('model','model.model_id=vehicledetail.Model','left')->where('vehicledetail.RegNo',$regNo)->get()->row();
             $this->data['error']='';
 
@@ -260,12 +264,12 @@ class Job extends Admin_Controller {
             $id3 = array('CompanyID' => $location);
             $this->data['company'] = $this->Job_model->get_data_by_where('company', $id3);
 
-            $this->data['worktype'] = $this->db->select('jobtype.*,jobtypeheader.jobhead_name')->from('jobtype')->join('jobtypeheader','jobtypeheader.jobhead_id=jobtype.jobhead')->where_in('jobtype.jobtype_id', array('2','9'))->get()->result();
+            $this->data['worktype'] = $this->db->select('jobtype.*,jobtypeheader.jobhead_name')->from('jobtype')->join('jobtypeheader','jobtypeheader.jobhead_id=jobtype.jobhead')->get()->result();
             // $this->data['parttype'] = $this->db->select()->from('parttype')->get()->result();
             $this->data['jobdesc'] = $this->db->select()->from('jobdescription')->get()->result();
             $this->data['jobtype'] = $this->db->select()->from('estimate_jobtype')->get()->result();
             $this->data['estimate_type'] = $this->db->select()->from('estimate_type')->get()->result();
-
+            $this->data['pricelevels'] = $this->db->select()->from('pricelevel')->get()->result();
             $this->data['parttype'] = $this->db->select('ShortName  AS parttype_code')->from('productquality')->get()->result();
             $this->data['insCompany'] = $this->db->select()->from('insu_company')->get()->result();
             $this->data['vehicle_company'] = $this->db->select()->from('vehicle_company')->where('VComCategory', 3)->get()->result();
@@ -720,8 +724,8 @@ class Job extends Admin_Controller {
     public function loadestimatejsonbycustomer() {
         $query = $_GET['q'];
         $cuscode =$_GET['cusCode'];
-        $regno =$_GET['regNo'];
-        $q = $this->db->select('EstimateNo AS id,EstimateNo AS text')->from('estimatehed')->where('EstCustomer',$cuscode)->where('EstRegNo',$regno)->like('EstimateNo', $query)->group_by('EstimateNo')->order_by('EstimateNo','DESC')->get()->result();
+//        $regno =$_GET['regNo'];
+        $q = $this->db->select('EstimateNo AS id,EstimateNo AS text')->from('estimatehed')->where('EstCustomer',$cuscode)->like('EstimateNo', $query)->group_by('EstimateNo')->order_by('EstimateNo','DESC')->get()->result();
         echo json_encode($q);die;
     }
 
@@ -844,15 +848,12 @@ class Job extends Admin_Controller {
         $data['JCompanyCode'] = $_POST['companyCode'];
         $data['JLocation']    = $location;
         $data['JCustomer']    = $_POST['cusCode'];
-        $data['JRegNo']       = $regNo;
+
         $data['JCusType']     = $_POST['cusType'];
         $data['JPayType']     = $_POST['payType'];
         $data['JCusCompany']  = isset($_POST['vehicleCompany']) ? $_POST['vehicleCompany']:0;
         $data['JIsInsDoc']    = isset($_POST['insdoc']) ? $_POST['insdoc']:0;
-        $data['OdoIn']        = $_POST['odoIn'];
-        $data['OdoOut']       = $_POST['odoOut'];
-        $data['OdoInUnit']    = $_POST['odoInUnit'];
-        $data['OdoOutUnit']   = $_POST['odoOutUnit'];
+
         $data['NextService']  = $_POST['nextService'];
         $data['PrevJobNo']    = $_POST['prevJobNum'];
         $data['SparePartJobNo'] = $_POST['sparePartCNo'];
@@ -860,9 +861,11 @@ class Job extends Admin_Controller {
         $data['advisorContact'] = $_POST['advisorPhone'];
         $data['appoimnetDate']  = $_POST['appoDate'];
         $data['deliveryDate']   = $_POST['deliveryDate'];
-        $data['JestimateNo']    = $_POST['estimateNo'];
+       $data['JestimateNo'] = isset($_POST['estimateNo']) && !empty($_POST['estimateNo']) ? $_POST['estimateNo'] : 0; // or '' depending on type
+
         $data['JJobType']       = $_POST['jobtype'];
-        // $data['Jsection'] = $_POST['jobSection'];
+        $data['PhoneModel']       = $_POST['phoneModel'];
+        $data['EmeiNo']       = $_POST['emiNo'];      
         $data['Advance'] = $_POST['advance'];
         $data['JAdvanceNo'] = isset($_POST['advanceno']) ? $_POST['advanceno']:0;
         $data['IsCompelte'] = 0;
@@ -875,14 +878,21 @@ class Job extends Admin_Controller {
         $jobArr = json_decode($_POST['jobArr']);
         $jobNumArr = json_decode($_POST['jobNumArr']);
         $jobCatArr = json_decode($_POST['jobCatArr']);
-
+        $jobAmtArr = json_decode($_POST['jobAmountArr']);
+    
+        
         $this->db->trans_start();
         $this->db->insert('jobcardhed',$data);
+ 
+
+
         for ($j = 0; $j < count($jobtypeArr); $j++) {
             $jobTypeDtl = array(
                 'JobCardNo' => $data['JobCardNo'],
                 'JobTypeId' => $jobtypeArr[$j]);
             $this->db->insert('jobcardtype',$jobTypeDtl);
+           
+
         }
 
         for ($i = 0; $i < count($jobArr); $i++) {
@@ -890,7 +900,10 @@ class Job extends Admin_Controller {
                 'JobCardNo' => $data['JobCardNo'],
                 'JobDescription' => $jobArr[$i],
                 'JobDescId' => $jobNumArr[$i],
-                'JobCategory' => $jobCatArr[$i]);
+                'JobCategory' => $jobCatArr[$i],
+                'JobAmount' => (float)$jobAmtArr[$i],
+              );
+
             $this->db->insert('jobcarddtl',$jobDtl);
         }
 
@@ -898,7 +911,7 @@ class Job extends Admin_Controller {
         if($_POST['estimateNo']!='' || $_POST['estimateNo']!=0){
 
             $estJobCardNo = $this->db->select('EstJobCardNo')->from('estimatehed')->where('EstCustomer', $_POST['cusCode'])->where('EstRegNo', $_POST['regNo'])->where('EstimateNo', $_POST['estimateNo'])->get()->row()->EstJobCardNo;
-            //if jobcard number empty only update jobcard number
+         
             if($estJobCardNo==''){
                 $this->db->update('estimatehed',array('EstJobCardNo' => $data['JobCardNo']),array('EstCustomer' => $_POST['cusCode'],'EstRegNo' => $_POST['regNo'],'EstimateNo' => $_POST['estimateNo']));
             }
@@ -917,7 +930,6 @@ class Job extends Admin_Controller {
     }
 
     public function updateJob() {
-         //remove white spaces
         $regNo = preg_replace('/\s+/', ' ', $_POST['regNo']);
         $location = $_SESSION['location'];
         $data['JobCardNo'] = $_POST['jobNo'];
@@ -927,7 +939,6 @@ class Job extends Admin_Controller {
         $data['JCusType'] = $_POST['cusType'];
         $data['JCusCompany'] = isset($_POST['vehicleCompany']) ? $_POST['vehicleCompany']:0;
         $data['JPayType']     = $_POST['payType'];
-        // $data['JCusCompany']  = isset($_POST['vehicleCompany']) ? $_POST['vehicleCompany']:0;
         $data['JIsInsDoc']  = isset($_POST['insdoc']) ? $_POST['insdoc']:0;
         $data['OdoIn'] = $_POST['odoIn'];
         $data['OdoOut'] = $_POST['odoOut'];
@@ -935,29 +946,26 @@ class Job extends Admin_Controller {
         $data['OdoOutUnit'] = $_POST['odoOutUnit'];
         $data['NextService'] = $_POST['nextService'];
         $data['PrevJobNo'] = $_POST['prevJobNum'];
+        $data['PhoneModel'] = $_POST['phoneModel'];
+        $data['EmeiNo'] = $_POST['emiNo'];
         $data['SparePartJobNo'] = $_POST['sparePartCNo'];
         $data['serviceAdvisor'] = $_POST['advisorName'];
         $data['advisorContact'] = $_POST['advisorPhone'];
         $data['appoimnetDate'] = $_POST['appoDate'];
         $data['deliveryDate'] = $_POST['deliveryDate'];
-        $data['JestimateNo'] = $_POST['estimateNo'];
+        $data['JestimateNo'] = isset($_POST['estimateNo']) && !empty($_POST['estimateNo']) ? $_POST['estimateNo'] : 0; // or '' depending on type
         $data['JJobType'] = $_POST['jobtype'];
-        // $data['Jsection'] = $_POST['jobSection'];
         $data['Advance'] = $_POST['advance'];
         $data['JAdvanceNo'] = isset($_POST['advanceno']) ? $_POST['advanceno']:0;
-
-        ///////////////////////////////////////////////
         $data1['mileageout'] = $_POST['odoOut'];
         $data1['mileageoutUnit'] = $_POST['odoOutUnit'];
-        ///////////////////////////////////////////////
         $jobtypeArr = $_POST['jobSection'];
-        // $data['IsCompelte'] = 0;
-        // $data['IsCancel'] = 0;
-
         $jobArr = json_decode($_POST['jobArr']);
         $jobNumArr = json_decode($_POST['jobNumArr']);
         $jobCatArr = json_decode($_POST['jobCatArr']);
+        $jobamountArr = json_decode($_POST['jobAmountArr']);
 
+        
         $this->db->trans_start();
         $this->db->update('jobinvoicehed',$data1,array('JobCardNo' => $data['JobCardNo']));
         $this->db->update('jobcardhed',$data,array('JobCardNo' => $data['JobCardNo']));
@@ -976,11 +984,12 @@ class Job extends Admin_Controller {
                 'JobCardNo' => $data['JobCardNo'],
                 'JobDescription' => $jobArr[$i],
                 'JobDescId' => $jobNumArr[$i],
-                'JobCategory' => $jobCatArr[$i]);
+                'JobCategory' => $jobCatArr[$i],
+                'JobAmount' => !empty($jobamountArr[$i]) ? $jobamountArr[$i] : 0,
+            );
              $this->db->insert('jobcarddtl',$jobDtl);
         }
 
-        //link to jobcard and estimate
         if($_POST['estimateNo']!='' || $_POST['estimateNo']!=0){
 
         $this->db->update('estimatehed',array('EstJobCardNo' => $data['JobCardNo']),array('EstCustomer' => $_POST['cusCode'],'EstRegNo' => $_POST['regNo'],'EstimateNo' => $_POST['estimateNo']));
@@ -988,7 +997,6 @@ class Job extends Admin_Controller {
 
         
         $this->Job_model->bincard($_POST['jobNo'],5,'Updated');//update bincard
-        // $this->Job_model->update_max_code('Job Number');
         $this->db->trans_complete();
         $res2= $this->db->trans_status();
 
@@ -998,27 +1006,150 @@ class Job extends Admin_Controller {
         die;
     }
 
-    public function cancelJob() {
+    // public function cancelJob() {
 
-        $data['IsCancel'] = 1;
+    //     $data['IsCancel'] = 1;
 
-        $this->db->trans_start();
-        $this->db->update('jobcardhed',$data,array('JobCardNo' => $_POST['jobNo']));
-        $this->Job_model->bincard($_POST['jobNo'],5,'cancelled');//update bincard
-        $this->db->trans_complete();
-        $res2= $this->db->trans_status();
+    //     $this->db->trans_start();
+    //     $job_no = $_POST['jobNo'];
+    //     $this->db->where('SalesPONumber', $job_no);
+    //     $this->db->update('issuenote_hed', ['InvIsCancel' => 1]);
+    //     $this->db->update('jobcardhed',$data,array('JobCardNo' => $_POST['jobNo']));
+    //     $this->Job_model->bincard($_POST['jobNo'],5,'cancelled');
+    //     $this->db->trans_complete();
+    //     $res2= $this->db->trans_status();
 
-        $return = array('JobCardNo' => ($_POST['jobNo']));
-        $return['fb'] = $res2;
-        echo json_encode($return);
-        die;
-    }
+    //     $return = array('JobCardNo' => ($_POST['jobNo']));
+    //     $return['fb'] = $res2;
+    //     echo json_encode($return);
+    //     die;
+    // }
+
+
+    public function cancelJob()
+        {
+            $job_no = $this->input->post('jobNo');
+
+            $this->db->trans_start();
+
+           
+            $this->db->where('JobCardNo', $job_no);
+            $this->db->update('jobcardhed', ['IsCancel' => 1]);
+
+           
+            $this->db->where('SalesPONumber', $job_no);
+            $this->db->update('issuenote_hed', ['InvIsCancel' => 1]);
+
+          
+            $issueNoteQuery = $this->db->get_where('issuenote_hed', [
+                'SalesPONumber' => $job_no
+            ]);
+
+            if ($issueNoteQuery->num_rows() > 0) {
+                $issueNoteNo = $issueNoteQuery->row()->SalesInvNo;
+
+               
+                $query = $this->db->get_where('issuenote_dtl', [
+                    'SalesInvNo' => $issueNoteNo
+                ]);
+
+                if ($query->num_rows() > 0) {
+                    foreach ($query->result_array() as $row) {
+                        $isEmi = $row['IsEmi'];
+                        $isSerial = $row['IsSerial'];
+                        $emi_noArr = $row['EmiNo'];
+                        $serial_noArr = $row['SalesSerialNo'];
+                        $product_codeArr = $row['SalesProductCode'];
+                        $location = $row['SalesInvLocation'];
+
+                        
+                        $totalQty = $row['SalesQty'] + $row['SalesFreeQty'];
+
+                        
+                        if ($isSerial == 1 && $isEmi == 0) {
+                          
+                            $this->db->update('productserialstock', [
+                                'Quantity' => 1
+                            ], [
+                                'ProductCode' => $product_codeArr,
+                                'Location' => $location,
+                                'SerialNo' => $serial_noArr
+                            ]);
+                        }
+
+                        if ($isSerial == 0 && $isEmi == 1) {
+                          
+                            $this->db->update('productimeistock', [
+                                'Quantity' => 1
+                            ], [
+                                'ProductCode' => $product_codeArr,
+                                'Location' => $location,
+                                'EmiNo' => $emi_noArr
+                            ]);
+                        }
+
+                        if ($isSerial == 1 && $isEmi == 1) {
+                           
+                            $this->db->update('productserialemistock', [
+                                'Quantity' => 1
+                            ], [
+                                'ProductCode' => $product_codeArr,
+                                'Location' => $location,
+                                'SerialNo' => $serial_noArr
+                            ]);
+                        }
+
+                        
+                        $proCode = $row['SalesProductCode'];
+                        $pl = $row['SalesPriceLevel'];
+                        $costp = $row['SalesCostPrice'];
+                        $selp = $row['SalesUnitPrice'];
+                        $loc = $row['SalesInvLocation'];
+
+                  
+                        if($pl ==1){
+                         $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalQty','1','$costp','$selp','$loc')");
+                         $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalQty',1,'$loc')");
+                        
+                        }else{
+                             $this->Stock_model->updateStock($proCode, $loc, $row['SalesQty'], $selp);
+                        }
+                        //$this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalQty',0,'$loc')");
+                    }
+                }
+            }
+
+      
+            $this->Job_model->bincard($job_no, 5, 'Job Cancelled with Issue Note stock restored');
+            $this->db->trans_complete();
+
+            $res2 = $this->db->trans_status();
+
+            $return = [
+                'JobCardNo' => $job_no,
+                'fb' => $res2
+            ];
+            echo json_encode($return);
+            die;
+        }
+
 
     public function loadproductjson() {
         $query = $_GET['q'];
-        $sup= 0;$supCode= '';
-         $this->load->model('admin/Grn_model');
+        $sup= 0;
+        $supCode= '';
+     $this->load->model('admin/Grn_model');
         echo $this->Grn_model->loadproductjson($query,$sup,$supCode);
+        die;
+    }
+     public function loadproductjsonjob() {
+        $query = $_GET['q'];
+        $sup= 0;
+        $supCode= '';
+        $pLevel = $_GET['price_level'];
+        
+     $this->load->model('admin/Grn_model');
+        echo $this->Grn_model->loadproductjsonjob($query,$sup,$supCode,$pLevel);
         die;
     }
 
@@ -1260,7 +1391,7 @@ class Job extends Admin_Controller {
 
          $isInvoice=0;
          $EstJobType =$this->db->select('EstJobType')->from('estimatehed')->where('EstimateNo', $estimateNo)->get()->row()->EstJobType;
-
+    
          if($EstJobType==1){
                 if($estimateNo!='' && $supplemetNo==0){
             

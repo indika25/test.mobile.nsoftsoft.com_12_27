@@ -1,12 +1,5 @@
 Company,ProductCode,ProductName,Price
 
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
-Avinda Auto Engineering (pvt) Ltd,100003,MOBIL GOLD 4L,13950
+Phone House,100254,6G BACK COVER,490
+Phone House,100254,6G BACK COVER,490
+Phone House,100949,nokia 106 back cover,200

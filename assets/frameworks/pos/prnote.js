@@ -179,15 +179,25 @@ $(document).ready(function() {
 
                     var resultData = JSON.parse(json);
                     if (resultData) {
-                        itemCode = resultData.product.ProductCode;
-                        $.each(resultData.serial, function(key, value) {
+                         if(resultData.serial){
+                        var serialArr = [resultData.serial.SerialNo]; 
+                        $.each(serialArr, function(key, value) {
+                             console.log('serialNoArrIndex2value',value);
                             var serialNoArrIndex2 = $.inArray(value, stockSerialnoArr);
+                            console.log('serialNoArrIndex2',serialNoArrIndex2);
                             if (serialNoArrIndex2 < 0) {
                                 stockSerialnoArr.push(value);
                             }
                         });
+                    }
 
-                        loadProModal(resultData.product.Prd_Description, resultData.product.ProductCode, resultData.product.ProductPrice, resultData.product.Prd_CostPrice, 0, resultData.product.IsSerial, resultData.product.IsFreeIssue, resultData.product.IsOpenPrice, resultData.product.IsMultiPrice, resultData.product.Prd_UPC, resultData.product.WarrantyPeriod);
+                        // loadProModal(resultData.product.Prd_Description, resultData.product.ProductCode, resultData.product.ProductPrice, resultData.product.Prd_CostPrice,
+                        //      0, resultData.product.IsSerial, resultData.product.IsFreeIssue, resultData.product.IsOpenPrice, resultData.product.IsMultiPrice, 
+                        //      resultData.product.Prd_UPC, resultData.product.WarrantyPeriod);
+                         loadProModal(resultData.product.Prd_Description, resultData.product.ProductCode, resultData.price_stock.Price, resultData.product.Prd_CostPrice,
+                             resultData.serial.SerialNo, resultData.product.IsSerial, resultData.product.IsFreeIssue, resultData.product.IsOpenPrice,
+                              resultData.product.IsMultiPrice, resultData.product.Prd_UPC, resultData.product.WarrantyPeriod,
+                               resultData.product.IsRawMaterial,resultData.product.UOM_Name, resultData.product.ProductVatPrice,resultData.serial.EmiNo);
                     } else {
                         $.notify("Product not found.", "danger");
                         $("#itemCode").val('');
@@ -228,7 +238,8 @@ $(document).ready(function() {
     $("#itemCode").autocomplete({
         source: function(request, response) {
             $.ajax({
-                url: 'loadproductjson',
+                 url: 'loadproductjson',
+                
                 dataType: "json",
                 data: {
                     q: request.term,
@@ -246,7 +257,7 @@ $(document).ready(function() {
                         return {
                             label: item.label,
                             value: item.value,
-                            data: item
+                            price: item.price
                         }
                     }));
                 }
@@ -257,72 +268,205 @@ $(document).ready(function() {
         select: function(event, ui) {
 //            var names = (ui.item.label);
             itemCode = ui.item.value;
+            price = ui.item.price;
 //        alert(itemCode);
-            $.ajax({
+             $.ajax({
                 type: "post",
-                url: "../../admin/Product/getProductByIdforSTO",
-                data: {proCode: itemCode, prlevel: price_level, location: loc},
+                url: baseUrl+'/Product/getProductByIdforSTO',
+                data: {proCode: itemCode, prlevel: 1, location: loc,price:price},
                 success: function(json) {
                     var resultData = JSON.parse(json);
+//                    alert(resultData.serial);
                     if (resultData) {
-                        $.each(resultData.serial, function(key, value) {
-                            var serialNoArrIndex1 = $.inArray(value, stockSerialnoArr);
-                            if (serialNoArrIndex1 < 0) {
-                                stockSerialnoArr.push(value);
+                        //  if(resultData.serial){
+                        //     $.each(resultData.serial, function(key, value) {
+                        //         var serialNoArrIndex1 = $.inArray(value, stockSerialnoArr);
+
+                        //         if (serialNoArrIndex1 < 0) {
+                        //             stockSerialnoArr.push(value);
+                        //         }
+                        //     });
+                        // }
+
+                        if (resultData.serial) {
+                            let SerialNoRaw = resultData.serial.SerialNo;
+
+                            if (Array.isArray(SerialNoRaw)) {
+                                // If it's an array, iterate and push
+                                SerialNoRaw.forEach(function(value) {
+                                    if ($.inArray(value, stockSerialnoArr) < 0) {
+                                        stockSerialnoArr.push(value);
+                                    }
+                                });
+                            } else if (SerialNoRaw) {
+                                // If it's a single value, push it directly
+                                if ($.inArray(SerialNoRaw, stockSerialnoArr) < 0) {
+                                    stockSerialnoArr.push(SerialNoRaw);
+                                }
                             }
-                        });
+                        }
 
-                        loadProModal(resultData.product.Prd_Description, resultData.product.ProductCode, resultData.product.ProductPrice, resultData.product.Prd_CostPrice, 0, resultData.product.IsSerial, resultData.product.IsFreeIssue, resultData.product.IsOpenPrice, resultData.product.IsMultiPrice, resultData.product.Prd_UPC, resultData.product.WarrantyPeriod);
+                         let SerialNoRaw = resultData.serial?.SerialNo ?? 0;
+                            let SerialNo = 0;
 
-//                    $("#modelBilling").modal('toggle');
-                        //loadProModal(resultData.Prd_Description, resultData.ProductCode, resultData.ProductPrice, resultData.Prd_CostPrice, 0, resultData.IsSerial, resultData.IsFreeIssue, resultData.IsOpenPrice, resultData.IsMultiPrice, resultData.Prd_UPC, resultData.WarrantyPeriod);
-//                    $('html, body').animate({scrollTop: $('#cart-table-body').offset().top}, 'slow');
+                            if (SerialNoRaw) {
+                                if (Array.isArray(SerialNoRaw)) {
+                                    
+                                    SerialNo = 0;
+                                } else {
+                                  
+                                    SerialNo = SerialNoRaw;
+                                }
+                            }
+
+                            
+
+                        let EmiNo = resultData.serial?.EmiNo ?? 0;
+                            
+                       
+                  
+                        loadProModal(resultData.product.Prd_Description, resultData.product.ProductCode, resultData.price_stock.Price, resultData.product.Prd_CostPrice,
+                             SerialNo, resultData.product.IsSerial, resultData.product.IsFreeIssue, resultData.product.IsOpenPrice,
+                              resultData.product.IsMultiPrice, resultData.product.Prd_UPC, resultData.product.WarrantyPeriod,
+                               resultData.product.IsRawMaterial,resultData.product.UOM_Name, resultData.product.ProductVatPrice,EmiNo);
+                    
+
+                    $("#proStock").html('');
+                    $("#priceStock").html('');
+
+                    if(resultData.price_stock){
+                     
+                        $("#proStock").html(resultData.productstock.Stock);
+                        $("#priceStock").html(resultData.price_stock.Stock);
+
+                     }else{
+                        $("#proStock").html(0);
+                        $("#priceStock").html('0');
+                     }
+
                     } else {
-                        $.notify("Product not found.", "danger");
+
+                        $.notify("Product not found.", "warning");
                         $("#itemCode").val('');
                         $("#itemCode").focus();
                         return false;
                     }
                 },
                 error: function() {
-                    alert('Error while request..');
-                }
+                    $.notify("Error while request.", "warning");
+                 }
             });
         }
     });
 
-//load model
-    function loadProModal(mname, mcode, msellPrice, mcostPrice, mserial, misSerial, misFree, isOP, isMP, upc, waranty) {
-//        clearProModal();
-        $("#qty").focus();
-//       alert(misSerial);
-        if (misSerial == 1) {
-//            $("#serialNo").val(mserial);
-//            $("#qty").val(1);
-//            $("#qty").attr('disabled', true);
-            $("#dv_SN").show();
-            $("#qty").focus();
 
+    
+
+//load model
+    // function loadProModal(mname, mcode, msellPrice, mcostPrice, mserial, misSerial, misFree, isOP, isMP, upc, waranty) {
+
+    //     $("#qty").focus();
+
+    //     if (misSerial == 1) {
+
+    //         $("#dv_SN").show();
+    //         $("#qty").focus();
+
+    //     } else {
+
+    //         $("#qty").attr('disabled', false);
+    //         $("#dv_SN").hide();
+    //     }
+
+    //     $("#qty").val(1);
+
+    //     $("#prdName").val(mname);
+    //     $("#itemCode").val(mcode);
+    //     $("#sellingPrice").val(msellPrice);
+    //     $("#unitcost").val(mcostPrice);
+    //     $("#isSerial").val(misSerial);
+    //     $("#upc").val(upc);
+
+    //     if (misSerial == 1) {
+
+    //     } else {
+    //         $("#dv_SN").hide();
+    //     }
+
+    // }
+
+    function loadProModal(mname, mcode, msellPrice, mcostPrice, mserial, misSerial, misFree, isOP, isMP, upc, waranty, isEmiNo,upm,vatSell,EmiNo) {
+            console.log('EmiNo',EmiNo);
+            $("#productName").html('');
+        $("#qty").focus();
+      console.log(misSerial,isEmiNo,mserial);
+        if (misSerial == 1 && isEmiNo == 0) {
+            $("#serialNo").val(mserial);
+            $("#serialNoCheck").val(mserial);
+            $("#qty").val(1);
+            $("#qty").attr('disabled', true);
+            $("#dv_SN").show();
+            $("#emiDiv").hide();
+           
+            $("#qty").focus();
+            $("#qty").focus();
+        }else if(misSerial == 0 && isEmiNo == 1){
+            $("#qty").val(1);
+            $("#qty").attr('disabled', true);
+             $("#mSerial").val('');
+            $("#emiDiv").show();
+           
+            $("#qty").focus();
+            $("#qty").focus();
+        }else if (misSerial == 1 && isEmiNo == 1){
+            $("#serialNo").val(mserial);
+            $("#serialNoCheck").val(mserial);
+            $("#qty").val(1);
+            $("#qty").attr('disabled', true);
+            $("#dv_SN").show();
+            $("#emiDiv").show();
+           
+            $("#qty").focus();
+            $("#qty").focus();
         } else {
-//            $("#mSerial").val('');
+           $("#mSerial").val('');
             $("#qty").attr('disabled', false);
             $("#dv_SN").hide();
+            $("#emiDiv").hide();
+
         }
         $("#qty").val(1);
 //        $("#mLProCode").html(mcode);
         $("#prdName").val(mname);
+        $("#productName").html(mname);
         $("#itemCode").val(mcode);
         $("#sellingPrice").val(msellPrice);
+        $("#orgSellPrice").val(msellPrice);
         $("#unitcost").val(mcostPrice);
         $("#isSerial").val(misSerial);
+        $("#isEmi").val(isEmiNo);
         $("#upc").val(upc);
+        $("#upm").html(upm);
+        $("#emiNo").val(EmiNo);
+
+        if(vatSell==0 || vatSell==null){
+            $("#proVatPrice").val(msellPrice);
+        }else{
+            $("#proVatPrice").val(vatSell);
+        }
 
         if (misSerial == 1) {
-
+            $("#dv_SN").show();
         } else {
             $("#dv_SN").hide();
         }
+        
 
+        if (misFree == 1) {
+            $("#dv_FreeQty").show();
+        } else {
+            $("#dv_FreeQty").hide();
+        }
     }
     discount_precent = parseFloat($("#disPercent").val());
     discount_amount = parseFloat($("#disAmount").val());
@@ -402,8 +546,10 @@ $(document).ready(function() {
         sellingPrice = parseFloat($("#sellingPrice").val());
         var unit = $("#mUnit option:selected").val();
         var prdName = $("#prdName").val();
-         serialNo = $("#serialNo").val();
+        serialNo = $("#serialNo").val();
         var is_serail = $("#isSerial").val();
+        var emiNo = $("#emiNo").val();
+        var isEmi = $("#isEmi").val();
         var priceLevel = $("#priceLevel option:selected").val();
         var qty = parseFloat($("#qty").val());
         var upc = parseFloat($("#upc").val());
@@ -412,6 +558,7 @@ $(document).ready(function() {
         var case1 = $("#mUnit option:selected").val();
         var preturn = $("#mReturn option:selected").val();
         newSerialQty = parseFloat($("#serialQty").val());
+        var itemCode = $("#itemCode").val();
         if (is_serail == 1) {
             serialQty = newSerialQty;
             qty = 1;
@@ -459,8 +606,40 @@ $(document).ready(function() {
                         $("#serialQty").val(serialQty);
                     }
 
-                    $("#tbl_item tbody").append("<tr ri=" + i + " id=" + i + " proCode='" + itemCode + "' uc='" + unit + "' qty='" + qty + "' unit_price='" + sellingPrice + "' upc='" + upc + "' caseCost='" + casecost + "' isSerial='" + is_serail + "' serial='" + serialNo + "' discount_percent='" + discount_precent + "' cPrice='" + costPrice + "' pL='" + priceLevel + "' fQ='" + freeQty + "' nonDisTotalNet='" + totalNet2 + "' netAmount='" + totalNet + "' proDiscount='" + product_discount + "' proName='" + prdName + "' proReturn='" + preturn + "'>\n\
-                <td class='text-center'>" + i + "</td><td class='text-left'>" + itemCode + "</td><td>" + prdName + "</td><td class='qty" + i + "'>" + accounting.formatNumber(qty) + "</td><td>" + unit + "</td><td class='text-right'>" + accounting.formatNumber(costPrice) + "</td><td class='text-center'>" + accounting.formatNumber(sellingPrice) + "</td><td class='text-right' >" + accounting.formatMoney(totalNet) + "</td><td>" + serialNo + "</td><td class='rem" + i + "'><a href='#' class='remove btn btn-xs btn-danger'><i class='fa fa-remove'></i></a></td></tr>");
+                    $("#tbl_item tbody").append("<tr ri=" + i + 
+                        " id=" + i + 
+                        " proCode='" + itemCode + 
+                        "' uc='" + unit + 
+                        "' qty='" + qty + 
+                        "' unit_price='" + sellingPrice + 
+                        "' upc='" + upc + 
+                        "' caseCost='" + casecost + 
+                        "' isSerial='" + is_serail + 
+                        "' serial='" + serialNo + 
+                        "' discount_percent='" + discount_precent + 
+                        "' cPrice='" + costPrice + 
+                        "' pL='" + priceLevel + 
+                        "' fQ='" + freeQty + 
+                        "' nonDisTotalNet='" + totalNet2 + 
+                        "' netAmount='" + totalNet + 
+                        "' proDiscount='" + product_discount + 
+                        "' proName='" + prdName + 
+                        "' emiNo='" + emiNo + 
+                        "' isEmi='" + isEmi + 
+                        "' proReturn='" + preturn + "'>\n\
+                    <td class='text-center'>" + i + 
+                    "</td><td class='text-left'>" + itemCode + 
+                    "</td><td>" + prdName + 
+                    "</td><td class='qty" + i + "'>" + accounting.formatNumber(qty) + 
+                    "</td><td>" + unit + 
+                    "</td><td class='text-right'>" + accounting.formatNumber(costPrice) + 
+                    "</td><td class='text-center'>" + accounting.formatNumber(sellingPrice) + 
+                    "</td><td class='text-right' >" + accounting.formatMoney(totalNet) + 
+                    "</td><td>" + serialNo + 
+                    "<td>" + emiNo + "</td>" +
+                    "<td style='display:none'>" + is_serail + "</td>" +
+                    "<td style='display:none'>" + isEmi + "</td>" +
+                    "</td><td class='rem" + i + "'><a href='#' class='remove btn btn-xs btn-danger'><i class='fa fa-remove'></i></a></td></tr>");
 
                     if (is_serail != 1) {
                         clear_gem_data();
@@ -511,8 +690,40 @@ $(document).ready(function() {
                         $("#serialQty").val(serialQty);
                     }
 
-                    $("#tbl_item tbody").append("<tr ri=" + i + " id=" + i + " proCode='" + itemCode + "' uc='" + unit + "' qty='" + qty + "' unit_price='" + sellingPrice + "' upc='" + upc + "' caseCost='" + casecost + "' isSerial='" + is_serail + "' serial='" + serialNo + "' discount_percent='" + discount_precent + "' cPrice='" + costPrice + "' pL='" + priceLevel + "' fQ='" + freeQty + "' nonDisTotalNet='" + totalNet2 + "' netAmount='" + totalNet + "' proDiscount='" + product_discount + "' proName='" + prdName + "' proReturn='" + preturn + "'>\n\
-                <td class='text-center'>" + i + "</td><td class='text-left'>" + itemCode + "</td><td>" + prdName + "</td><td class='qty" + i + "'>" + accounting.formatNumber(qty) + "</td><td>" + unit + "</td><td class='text-right'>" + accounting.formatNumber(costPrice) + "</td><td class='text-center'>" + accounting.formatNumber(sellingPrice) + "</td><td class='text-right' >" + accounting.formatMoney(totalNet) + "</td><td>" + serialNo + "</td><td class='rem" + i + "'><a href='#' class='remove btn btn-xs btn-danger'><i class='fa fa-remove'></i></a></td></tr>");
+                    $("#tbl_item tbody").append("<tr ri=" + i + 
+                        " id=" + i + 
+                        " proCode='" + itemCode + 
+                        "' uc='" + unit + 
+                        "' qty='" + qty + 
+                        "' unit_price='" + sellingPrice + 
+                        "' upc='" + upc + 
+                        "' caseCost='" + casecost + 
+                        "' isSerial='" + is_serail + 
+                        "' serial='" + serialNo + 
+                        "' emiNo='" + emiNo + 
+                        "' isEmi='" + isEmi + 
+                        "' discount_percent='" + discount_precent + 
+                        "' cPrice='" + costPrice + 
+                        "' pL='" + priceLevel + 
+                        "' fQ='" + freeQty + 
+                        "' nonDisTotalNet='" + totalNet2 + 
+                        "' netAmount='" + totalNet + 
+                        "' proDiscount='" + product_discount + 
+                        "' proName='" + prdName + 
+                        "' proReturn='" + preturn + "'>\n\
+                    <td class='text-center'>" + i + 
+                    "</td><td class='text-left'>" + itemCode + 
+                    "</td><td>" + prdName + 
+                    "</td><td class='qty" + i + "'>" + accounting.formatNumber(qty) + 
+                    "</td><td>" + unit + 
+                    "</td><td class='text-right'>" + accounting.formatNumber(costPrice) + 
+                    "</td><td class='text-center'>" + accounting.formatNumber(sellingPrice) + 
+                    "</td><td class='text-right' >" + accounting.formatMoney(totalNet) + 
+                    "</td><td>" + serialNo + 
+                    "<td>" + emiNo + "</td>" +
+                    "<td style='display:none'>" + is_serail + "</td>" +
+                    "<td style='display:none'>" + isEmi + "</td>" +
+                    "</td><td class='rem" + i + "'><a href='#' class='remove btn btn-xs btn-danger'><i class='fa fa-remove'></i></a></td></tr>");
 
                     if (is_serail != 1) {
                         clear_gem_data();
@@ -662,7 +873,8 @@ $("#serialNo").autocomplete({
         var cost_price = new Array();
         var pro_total = new Array();
         var pro_return = new Array();
-
+        var emi_no = new Array();
+        var isEmi = new Array();
 
         var grnDate = $("#grnDate").val();
         var invUser = $("#invUser").val();
@@ -694,6 +906,8 @@ $("#serialNo").autocomplete({
             isSerial.push($(this).attr("isSerial"));
             pro_name.push($(this).attr("proName"));
             pro_return.push($(this).attr("proReturn"));
+            emi_no.push($(this).attr('emiNo'));
+            isEmi.push($(this).attr('isEmi'));
 
         });
 
@@ -714,10 +928,15 @@ $("#serialNo").autocomplete({
         var sendPro_total = JSON.stringify(pro_total);
         var sendIsSerial = JSON.stringify(isSerial);
         var sendProReturn = JSON.stringify(pro_return);
-
+        var emi_noArr = JSON.stringify(emi_no);
+        var sendIsEmi = JSON.stringify(isEmi);
 
         var r = confirm("Do you want to save this transaction.?");
         if (r == true) {
+            if(supcode ==''){
+                 $.notify("Please select a Supllier.", "warning");
+                return false;
+            }
             if ((rowCount - 1) == '0' || (rowCount - 1) == '') {
                 $.notify("Please add products.", "danger");
                 return false;
@@ -730,20 +949,22 @@ $("#serialNo").autocomplete({
                 $.ajax({
                     type: "post",
                     url: "savePRN",
-                    data: {grn_no:grn_no,sup_code:supcode,invoicenumber: invoicenumber, additional: additional, grnremark: grnremark, product_code: sendProduct_code, serial_no: sendSerial_no, qty: sendQty, unit_price: sendUnit_price,
-                        discount_precent: sendDiscount_precent, pro_discount: sendPro_discount, total_net: sendTotal_net, unit_type: sendUnit_type, price_level: sendPrice_level, upc: sendUpc,
-                        case_cost: sendCaseCost, freeQty: sendFree_qty, cost_price: sendCost_price, pro_total: sendPro_total, isSerial: sendIsSerial, proName: sendPro_name,proReturn:sendProReturn, total_cost: totalCost, totalProDiscount: totalProWiseDiscount, totalGrnDiscount: totalGrnDiscount,
-                        grnDate: grnDate, invUser: invUser, total_amount: total_amount, total_discount: total_discount, total_net_amount: totalNetAmount, location: location},
+                    data: {grn_no:grn_no,sup_code:supcode,invoicenumber: invoicenumber, additional: additional, grnremark: grnremark, product_code: sendProduct_code, 
+                        serial_no: sendSerial_no, qty: sendQty, unit_price: sendUnit_price,discount_precent: sendDiscount_precent, pro_discount: sendPro_discount, 
+                        total_net: sendTotal_net, unit_type: sendUnit_type, price_level: sendPrice_level, upc: sendUpc,case_cost: sendCaseCost, freeQty: sendFree_qty, 
+                        cost_price: sendCost_price, pro_total: sendPro_total, isSerial: sendIsSerial, proName: sendPro_name,proReturn:sendProReturn, total_cost: totalCost, 
+                        totalProDiscount: totalProWiseDiscount, totalGrnDiscount: totalGrnDiscount,grnDate: grnDate, invUser: invUser, total_amount: total_amount, 
+                        total_discount: total_discount, total_net_amount: totalNetAmount, location: location,emi_no:emi_noArr,isEmi: sendIsEmi},
                     success: function(data) {
                         var resultData = JSON.parse(data);
                         var feedback = resultData['fb'];
                         var invNumber = resultData['InvNo'];
                         if (feedback != 1) {
-                            $.notify("Transaction not saved successfully..", "danger");
+                            $.notify("Purchase Return Failed..", "danger");
                             $("#saveItems").attr('disabled', false);
                             return false;
                         } else {
-                            $.notify("Transaction saved successfully..", "success");
+                            $.notify("Purchase Return saved successfully..", "success");
                             $("input[name=suppliercheck][value='1']").prop('checked', false);
 //                        $('#tbl_item tbody').html("");
                             $("#invoicenumber").val("");

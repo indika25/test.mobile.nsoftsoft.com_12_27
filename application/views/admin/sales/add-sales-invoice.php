@@ -22,7 +22,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                         <div class="col-md-4">
                             <form class="form-horizontal" >
                                 <div class="form-group">
-                                    <label for="customer" class="col-sm-4 control-label">Invoice No <span class="required">*</span></label>
+                                    <label for="customer" class="col-sm-4 control-label">Invoice No<span class="required">*</span></label>
                                     <div class="col-sm-7">
                                         <input type="text" tabindex="1" class="form-control" value="<?php echo $inv; ?>"  name="grn_no" id="grn_no" placeholder="Auto Generate">
                                     </div>
@@ -50,7 +50,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label class="col-sm-4 control-label">CO Number </label>
+                                    <label class="col-sm-4 control-label">CO Number</label>
                                     <div class="col-sm-7">
                                         <input type="text" name="po_number" class="form-control" id="po_number" placeholder="Customer Order" value="<?php echo $customerOder;?>">
                                     </div>
@@ -237,6 +237,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                 <form class="form-horizontal" id="formProduct">
                                     <span id="lbl_batch_no"></span>
                                     <label id="errProduct"></label>
+                                    <div class="form-group">
+                                        <div>
+                                            <label for="itemCode" class="col-sm-4 control-label"><span class="required"></span></label>
+                                             <div style="padding-left:210px;" class="col-sm-12"><span id="productName" style="font-size: 10px;font-weight: bold;"></span> = 
+                                                <span id="proStock" style="font-size: 10px;font-weight: bold;"></span><br> <span  style="font-size: 10px;font-weight: bold;">Price stock =</span>
+                                                <span id="priceStock" style="font-size: 10px;font-weight: bold;"></span>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <!-- <span id="productName"></span> -->
                                     <!-- <div class="form-group">
                                         <label class="col-sm-4 control-label">Supplier Item</label>
@@ -329,7 +338,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="hidden" class="form-control" required="required"  name="batchCode" id="batchCode">
                                                 <input type="hidden" class="form-control" required="required"  name="upc" id="upc">
                                                 <input type="hidden" class="form-control" required="required"  name="isSerial" id="isSerial">
+                                                <input type="hidden" class="form-control" required="required"  name="isEmi" id="isEmi">
                                                 <input type="hidden" class="form-control" required="required"  name="orgSellPrice" id="orgSellPrice">
+                                                
+                                            
                                             </div>
                                             <div class="col-sm-1"><input class="prd_icheck" type="checkbox" name="isZero" id="isZero" value='1'></div>
                                         </div>
@@ -344,20 +356,32 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                         <div class="form-group" id="dv_SN">
                                             <label for="product" class="col-sm-4 control-label">Serial No <span class="required">*</span></label>
                                             <div class="col-sm-6">
-                                                <input type="text" tabindex="14" class="form-control" required="required"  name="serialNo" id="serialNo" placeholder="Enter Serial No"  value="" onfocus="this.select();" >
+                                                <input type="text" tabindex="14" class="form-control" required="required"  name="serialNo" id="serialNo" placeholder="Enter Serial No"  value="" onfocus="this.select();">
                                                 <input type="hidden" tabindex="14" class="form-control" required="required"  name="serialQty" id="serialQty"  value="0">
+                                                <input type="hidden" tabindex="14" class="form-control" name="serialNoCheck" id="serialNoCheck">
                                             </div>
                                         </div>
+
+                                        <div class="form-group" id="emiDiv"> 
+                                             <label for="sellingPrice"class="col-sm-4 control-label">Emi No <span class="required">*</span></label>
+                                             <div class="col-sm-6">
+                                                 <input type="text"  tabindex="13"  min="0" step="1" class="form-control" name="emiNo" id="emiNo">
+                                                   <input type="hidden" tabindex="14" class="form-control" required="required"  name="emeiQty" id="emeiQty"  value="0">
+                                                <input type="hidden" tabindex="14" class="form-control" name="emeiNoCheck" id="emeiNoCheck">
+                                                 
+                                             </div>
+                                         </div>
                                         <div class="form-group">
-                                    <label for="supplier" class="col-sm-4 control-label">Sales Person<span class="required">*</span></label>
-                                    <div class="col-sm-7">
-                                        <select class="form-control" tabindex="14" required="required"  name="salesperson" id="salesperson" placeholder="sales person">
-                                        <option value="">-Select a sales person-</option>
-                                       <?php foreach ($salesperson as $trns) { ?>
-                                <option value="<?php echo $trns->RepID; ?>" ><?php echo $trns->RepName; ?></option>
-                                <?php } ?>
-                                        </select>
-                                    </div>
+                                            <input type="hidden" name="salesperson" id="salesperson" value="0">
+<!--                                    <label for="supplier" class="col-sm-4 control-label">Sales Person<span class="required">*</span></label>-->
+<!--                                    <div class="col-sm-7">-->
+<!--                                        <select class="form-control" tabindex="14" required="required"  name="salesperson" id="salesperson" placeholder="sales person">-->
+<!--                                        <option value="">-Select a sales person-</option>-->
+<!--                                       --><?php //foreach ($salesperson as $trns) { ?>
+<!--                                <option value="--><?php //echo $trns->RepID; ?><!--" >--><?php //echo $trns->RepName; ?><!--</option>-->
+<!--                                --><?php //} ?>
+<!--                                        </select>-->
+<!--                                    </div>-->
                                 </div>
                                         <div class="form-group">
                                             <label for="additional" class="col-sm-4 control-label">Warranty Period</label>
@@ -416,12 +440,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                             <th>Product</th>
                                             <th>Cost</th>
                                             <th>Quantity</th>
+                                            <th> Free Quantity</th>
                                             <th>Price</th>
                                             <th>Discount (%)</th>
                                             <th>Total Amount</th>
                                             <th>Serial</th>
                                             <th>warranty</th>
-                                            <th>Sale person</th>
+                                            <th>IEMI NO</th>
+                                          
                                             <th>##</th>
                                             <th>##</th>
                                         </tr>
@@ -439,13 +465,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                 <span id="errData"></span>
                                <!--  &nbsp;<input  tabindex="20"  type="hidden" name="dwnFile" id="dwnFile" value="<?php echo base_url().'admin/grn/barcode.txt'?>">&nbsp;
                                 <a class="btn btn-warning"  tabindex="20"  id="dwnLink" href="<?php echo base_url("admin/grn/downloadBarCode")?>">Download Barcode</a>&nbsp; -->
-                                <button data-target="#modelPayment" type="button"  data-toggle="modal" class="btn btn-primary" id="cart-pay-button">
+                                <button  tabindex="19" id="PrintSaveItems" class="btn btn-success"><i class="fa fa-print"></i> Save & Print</button>&nbsp;
+                                <button  tabindex="19" id="onlySaveItems" class="btn btn-primary"><i class="fa fa-save"></i> Save</button>&nbsp;
+                                <button data-target="#modelPayment" type="button"  data-toggle="modal" class="btn btn-warning" id="cart-pay-button">
                                     <i class="fa fa-money"></i>
-                                    Save            
+                                    Payment
                                 </button>&nbsp;
 
-                                <!-- <button id="loadBarCode" class="btn btn-info">Barcode Generate</button>&nbsp; -->
-                              <!--    <button  tabindex="19" id="saveItems" class="btn btn-success">Save</button>&nbsp;--><button id="btnPrint" link="#" class="btn btn-primary">Print</button>&nbsp; 
+                               <button id="btnPrint" link="#" class="btn btn-primary">Print</button>&nbsp; 
                                  <button  tabindex="21" id="resetItems" class="btn btn-danger">Reset</button>&nbsp;
                                 <input type="hidden" name="action" id="action" value="<?php echo $action; ?>">
                                 
@@ -555,7 +582,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                         <span class="label">Advance Payment</span>
                                         <input type="text" name="advance_payment_no" id="advance_payment_no"   class="form-control" placeholder="Advace Payment No">
                                     </div>
-                                    <div class="form-group" style="display:;">
+                                    <div class="form-group" style="">
                                         <span class="label">Return Payment</span>
                                         <input type="text" name="return_payment_no" id="return_payment_no"   class="form-control" placeholder="Return Payment No">
                                     </div><hr>

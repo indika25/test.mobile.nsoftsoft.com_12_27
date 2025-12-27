@@ -22,7 +22,7 @@ $(document).ready(function() {
                 success: function(json) {
 
                     var resultData = JSON.parse(json);
-
+                    console.log(resultData);
                     if (resultData) {
                         if (!resultData.stock) {
                             $("#stock").html("<span class='label label-danger'>Serial Not found</span>");
@@ -31,7 +31,9 @@ $(document).ready(function() {
                             $("#tblGrn").hide();
                         } else {
                             $("#tblGrn").show();
-                            $("#serial").html(resultData.product.SerialNo);
+                            $("#serial").html(resultData.stock.SerialNo);
+                             $("#emino").html(resultData.stock.EmiNo);
+                             $("#quantity").html(resultData.stock.Quantity);
                             $("#costPrice").html(accounting.formatMoney(resultData.product.GRN_UnitCost));
                             $("#productCode").html(resultData.product.ProductCode);
                             $("#sellingPrice").html(accounting.formatMoney(resultData.product.ProductPrice));

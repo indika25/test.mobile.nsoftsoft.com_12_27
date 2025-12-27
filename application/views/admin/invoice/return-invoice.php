@@ -146,6 +146,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                             <label for="product" class="col-sm-4 control-label">Qty <span class="required">*</span></label>
                                             <div class="col-sm-4">
                                                 <input type="number" tabindex="10"  min="0" step="1" class="form-control" required="required"  name="qty" id="qty" placeholder="Enter Qty"  value="0">
+                                                <input type="hidden" tabindex="10"  min="0" step="1" class="form-control" required="required"  name="getqty" id="getqty" placeholder="Enter Qty"  value="0">
+                                           
                                             </div>
                                         </div>
                                         <div class="form-group">
@@ -158,15 +160,29 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="hidden" class="form-control" required="required"  name="batchCode" id="batchCode">
                                                 <input type="hidden" class="form-control" required="required"  name="upc" id="upc">
                                                 <input type="hidden" class="form-control" required="required"  name="isSerial" id="isSerial">
+                                                <input type="hidden" class="form-control" required="required"  name="isEmi" id="isEmi">
+                                                <input type="hidden" class="form-control" required="required"  name="orgSellPrice" id="orgSellPrice">
+                                                
                                             </div>
                                         </div>
                                         <div class="form-group" id="dv_SN">
                                             <label for="product" class="col-sm-4 control-label">Serial No <span class="required">*</span></label>
                                             <div class="col-sm-6">
-                                                <input type="text" tabindex="14" class="form-control" required="required"  name="serialNo" id="serialNo" placeholder="Enter Serial No"  value="">
+                                                <input type="text" tabindex="14" class="form-control" required="required"  name="serialNo" id="serialNo" placeholder="Enter Serial No"  value="" onfocus="this.select();">
                                                 <input type="hidden" tabindex="14" class="form-control" required="required"  name="serialQty" id="serialQty"  value="0">
+                                                <input type="hidden" tabindex="14" class="form-control" name="serialNoCheck" id="serialNoCheck">
                                             </div>
                                         </div>
+
+                                        <div class="form-group" id="emiDiv"> 
+                                             <label for="sellingPrice"class="col-sm-4 control-label">Emi No <span class="required">*</span></label>
+                                             <div class="col-sm-6">
+                                                 <input type="text"  tabindex="13"  min="0" step="1" class="form-control" name="emiNo" id="emiNo">
+                                                   <input type="hidden" tabindex="14" class="form-control" required="required"  name="emeiQty" id="emeiQty"  value="0">
+                                                <input type="hidden" tabindex="14" class="form-control" name="emeiNoCheck" id="emeiNoCheck">
+                                                 
+                                             </div>
+                                         </div>
                                         
                                     </div>
                                     <div class="form-group">
@@ -195,22 +211,29 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                         <div class="col-md-7">
                             <h5 class="text-center"><b>Return Item List</b></h5>
                             <div class="table-responsives">
-                                <table id="tbl_item" class="table table-bordered table-striped table-responsives">
+                                 <table id="tbl_item" class="table table-bordered table-striped table-responsives">
                                     <thead>
                                         <tr>
                                             <th>#</th>
-                                            <th>Product Code</th>
-                                            <th>Product Name</th>
+                                            <th>Code</th>
+                                            <th>Product</th>
+                                            <th>Cost</th>
                                             <th>Quantity</th>
-                                            <th>Unit Price</th>
-                                            <th>Total Net Amount</th>
+                                            <th> Free Quantity</th>
+                                            <th>Price</th>
+                                            <th>Discount (%)</th>
+                                            <th>Total Amount</th>
                                             <th>Serial</th>
-                                            <th></th>
+                                            <th>warranty</th>
+                                            <th>IEMI NO</th>
+                                          
+                                            <th>##</th>
+                                            <th>##</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-
                                     </tbody>
+
                                 </table>
                             </div>
                             <div class="text-right">

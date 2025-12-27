@@ -184,36 +184,56 @@ class Invoice_model extends CI_Model {
     }
 
     public function loadproductjson($query, $sup, $inv, $pl,$invType) {
+
+       
+           
         if ($sup == 1 && ($inv == '' || $inv == 0)) {
             $query1 = $this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice,product.Prd_UPC AS InvQty')
                             ->from('product')
                             ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
                             ->like("CONCAT(' ',product.ProductCode,product.Prd_Description)", $query, 'left')
                             ->limit(50)->get();
-        } elseif ($sup == 0 && ($inv != '' || $inv != 0)) {
+    
+    
+    } elseif ($sup == 0 && ($inv != '' || $inv != 0)) {
 
             if($invType==1){
-                $query1 = $this->db->select('product.ProductCode,salesinvoicedtl.SalesProductName AS Prd_Description,(salesinvoicedtl.SalesQty-salesinvoicedtl.SalesReturnQty) As InvQty,salesinvoicedtl.SalesUnitPrice as ProductPrice')
+                $query1 = $this->db->select('product.ProductCode,salesinvoicedtl.SalesProductName AS Prd_Description,(salesinvoicedtl.SalesQty-salesinvoicedtl.SalesReturnQty) As InvQty,salesinvoicedtl.SalesUnitPrice as ProductPrice, productcondition.IsSerial, salesinvoicedtl.SalesSerialNo')
                             ->from('salesinvoicedtl')
                             ->join('product', 'salesinvoicedtl.SalesProductCode = product.ProductCode', 'INNER')
+                            ->join('productcondition', 'productcondition.ProductCode = product.ProductCode', 'INNER')
                             ->where('salesinvoicedtl.SalesInvNo', $inv)
                             ->where('salesinvoicedtl.SalesPriceLevel', $pl)
                             ->like("CONCAT(' ',product.ProductCode,salesinvoicedtl.SalesProductName)", $query, 'left')
-                            ->limit(50)->get();
-            }elseif($invType==2){
-                $query1 = $this->db->select('jobinvoicedtl.JobCode As ProductCode,jobinvoicedtl.JobDescription AS Prd_Description,(jobinvoicedtl.JobQty-jobinvoicedtl.JobReturnQty) As InvQty,jobinvoicedtl.JobPrice as ProductPrice')
+                            ->group_by('product.ProductCode')
+  ->limit(50)->get();
+                           
+            }
+            elseif($invType==2){
+                $query1 = $this->db->select('jobinvoicedtl.JobCode As ProductCode,jobinvoicedtl.JobDescription AS Prd_Description,(jobinvoicedtl.JobQty-jobinvoicedtl.JobReturnQty) As InvQty,jobinvoicedtl.JobPrice as ProductPrice, productcondition.IsSerial')
                             ->from('jobinvoicedtl')
                             ->join('product', 'jobinvoicedtl.JobCode = product.ProductCode', 'left')
+                            ->join('productcondition', 'productcondition.ProductCode = product.ProductCode', 'INNER')
                             ->where('jobinvoicedtl.JobInvNo', $inv)
                             // ->where('jobinvoicedtl.InvPriceLevel', $pl)
                             ->like("CONCAT(' ',product.ProductCode,jobinvoicedtl.JobDescription)", $query, 'left')
                             ->limit(50)->get();
             }
         }
-//        
+       
+ 
+          
         if ($query1->num_rows() > 0) {
+          
             foreach ($query1->result_array() as $row) {
+                
+                if ($row['IsSerial'] == 1) {
+                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description'] . " = Rs." . $row['ProductPrice'] . " , Serial - " . $row['SalesSerialNo']));
+                $new_row['serial'] = htmlentities(stripslashes($row['SalesSerialNo']));
+                } else {
                 $new_row['label'] = htmlentities(stripslashes($row['Prd_Description'] . " = Rs." . $row['ProductPrice']));
+                }
+
                 $new_row['value'] = htmlentities(stripslashes($row['ProductCode']));
                 if ($sup == 1 && ($inv == '' || $inv == 0)) {
                     $new_row['qty'] = htmlentities(stripslashes('All'));
@@ -227,6 +247,82 @@ class Invoice_model extends CI_Model {
             echo json_encode($row_set); //format the array into json data
         }
     }
+
+
+ public function loadproductEmei($product, $q, $location,$invNo)
+{
+    $query2 = $this->db->select('salesinvoicedtl.EmiNo')
+        ->from('product')
+        ->where('product.ProductCode', $product)
+        ->where('salesinvoicedtl.SalesInvLocation', $location)
+        ->where('salesinvoicedtl.SalesInvNo', $invNo)       
+        ->where('salesinvoicedtl.IsReturn', 0)  
+         ->like("salesinvoicedtl.EmiNo", $q, 'both')
+        ->join('salesinvoicedtl', 'salesinvoicedtl.SalesProductCode = product.ProductCode')
+        ->get();
+
+    // $query1 = $this->db->select('productserialemistock.SerialNo, productserialemistock.EmiNo')
+    //     ->from('product')
+    //     ->where('product.ProductCode', $product)
+    //     ->where('productserialemistock.Location', $location)
+
+    //     ->like("productserialemistock.EmiNo", $q, 'both')
+    //     ->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode')
+    //     ->get();
+
+    $row_set = [];
+
+    if ($query2->num_rows() > 0) {
+        foreach ($query2->result_array() as $row) {
+            $row_set[] = [
+                'label' => $row['EmiNo'],
+                'value' => $row['EmiNo'],
+                'emiNo' => $row['EmiNo'],
+            ];
+        }
+     
+    } else {
+        // foreach ($query1->result_array() as $row) {
+        //     $row_set[] = [
+        //         'label' => $row['SerialNo'],
+        //         'value' => $row['SerialNo'],
+        //         'emiNo' => $row['EmiNo'],
+        //     ];
+        // }
+    }
+
+    return json_encode($row_set);
+}
+
+
+    public function loadproductSerial($product, $q, $location,$invNo)
+{
+    $row_set = [];
+
+    $this->db->select('SalesSerialNo, SalesProductCode, EmiNo');
+    $this->db->from('salesinvoicedtl');
+    $this->db->where('SalesProductCode', $product);
+    $this->db->where('SalesInvLocation', $location);
+    $this->db->where('SalesInvNo', $invNo);
+    $this->db->where('IsReturn', 0); if (!empty($q)) {
+        $this->db->like('SalesSerialNo', $q, 'left');
+    }
+
+    $query = $this->db->get();
+
+    foreach ($query->result_array() as $row) {
+
+        $new_row['label'] = $row['SalesSerialNo'];
+        $new_row['value'] = $row['SalesSerialNo'];
+        $new_row['emiNo'] = $row['EmiNo']; 
+
+        $row_set[] = $new_row;
+    }
+
+    return json_encode($row_set);
+}
+
+
 
     public function saveReturn($grnHed, $retPay, $post, $grnNo, $totalDisPrecent, $grnCredit,$invDate) {
          $invType = $_POST['invType'];
@@ -247,6 +343,7 @@ class Invoice_model extends CI_Model {
         $totalAmountArr = json_decode($post['pro_total']);
         $isSerialArr = json_decode($post['isSerial']);
         $pro_nameArr = json_decode($post['proName']);
+        $emenoArr = json_decode($_POST['emeiNo']);
         $location = $post['location'];
 
         $this->db->trans_start();
@@ -265,7 +362,11 @@ class Invoice_model extends CI_Model {
                 'PriceLevel' => $price_levelArr[$i],
                 'SellingPrice' => $sell_priceArr[$i],
                 'ReturnAmount' => $totalAmountArr[$i],
-                'SerialNo' => $serial_noArr[$i]);
+                'SerialNo' => $serial_noArr[$i],
+                'EmiNo' => $emenoArr[$i],
+                
+            
+            );
             $this->db->insert('returninvoicedtl', $grnDtl);
 
             //update sales  invoice
@@ -289,6 +390,18 @@ class Invoice_model extends CI_Model {
                     $this->db->insert('productserialstock', array('ProductCode' => $product_codeArr[$i], 'Location' => $location, 'SerialNo' => $serial_noArr[$i], 'Quantity' => $qtyArr[$i], 'GrnNo' => $grnNo));
                 }
             }
+
+            //update Emei Stock
+             $ps2 = $this->db->select('ProductCode')->from('productimeistock')->where(array('ProductCode' => $product_codeArr[$i], 'EmiNo' => $emenoArr[$i], 'Location' => $location))->get();
+            if ($ps2->num_rows() > 0) {
+                $this->db->update('productimeistock', array('Quantity' => $qtyArr[$i]), array('ProductCode' => $product_codeArr[$i], 'EmiNo' => $emenoArr[$i], 'Location' => $location));
+            } else {
+                if ($isSerialArr[$i] == 1) {
+                    $this->db->insert('productimeistock', array('ProductCode' => $product_codeArr[$i], 'Location' => $location, 'EmiNo' => $emenoArr[$i], 'Quantity' => $qtyArr[$i], 'GrnNo' => $grnNo));
+                }
+            }
+
+
 
             //update price stock
             $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$totalGrnQty','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location')");

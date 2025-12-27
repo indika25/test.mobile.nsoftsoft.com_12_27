@@ -94,7 +94,10 @@
             data: $(this).serializeArray(),
             success: function (data) {
                 if (data == 1) {
+                    $.notify("Supplier Saved Sucessfully.", "Sucess");
                     $('#suppliermodal').modal('hide');
+                }else{
+                    $.notify("Supplier Not Saved Sucessfully.", "Warning");
                 }
             }
         });

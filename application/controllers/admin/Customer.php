@@ -26,6 +26,8 @@ class Customer extends Admin_Controller {
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->template->admin_render('customer/view_addcustomer', $this->data);
     }
+
+
     public function outstandingcustomer() {
         $this->breadcrumbs->unshift(1, lang('menu_addcustomer'), 'admin/customer');
         $this->page_title->push("All Outstanding Customers");
@@ -86,6 +88,7 @@ class Customer extends Admin_Controller {
         $this->data['paytype'] = $this->Customer_model->loadpaytype();
         $this->load->view('customer/view_customer', $this->data);
     }
+
 
     public function view_vehicles() {
         $this->breadcrumbs->unshift(1, 'Customer', 'admin/customer/addcustomer');

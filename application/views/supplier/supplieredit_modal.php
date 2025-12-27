@@ -88,8 +88,13 @@
             type: "POST",
             data: $(this).serializeArray(),
             success: function (data) {
+             
                 if (data == 1) {
+                   
+                    $.notify("Supplier Updated Sucessfully.", "Sucess");
                     $('#suppliermodal').modal('hide');
+                }else{
+                    $.notify("Supplier Not Updated Sucessfully.", "Warning");
                 }
             }
         });

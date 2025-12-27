@@ -74,22 +74,22 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                             <thead>
                                 <tr>
                                     <td>Inv. Date</td>
-                                    <td>Customer</td>
+                                    <!--<td>Customer</td>-->
                                     <td>Inv No</td>
                                     <td>Total Amount</td>
                                     <td>Dis Amount</td>
-                                    <td>Vat Amount</td>
-                                    <td>Nbt Amount</td>
-                                    <td>net Amount</td>
+                                    <!--<td>Vat Amount</td>-->
+                                    <!--<td>Nbt Amount</td>-->
+                                    <td>Net Amount</td>
                                     <td>Cost Amount</td>
                                     <td>Profit</td>
-                                    <td>Cash Amount</td>
-                                    <td>Card Amount</td>
-                                    <td>Cheque Amount</td>
-                                    <td>Advance Amount</td>
-                                    <td>Credit Amount</td>                                    
-                                    <td>Return</td>
-                                    <td>Settled Amount</td>
+                                    <!--<td>Cash Amount</td>-->
+                                    <!--<td>Card Amount</td>-->
+                                    <!--<td>Cheque Amount</td>-->
+                                    <!--<td>Advance Amount</td>-->
+                                    <!--<td>Credit Amount</td>                                    -->
+                                    <!--<td>Return</td>-->
+                                    <!--<td>Settled Amount</td>-->
                                 </tr>
                             </thead>
                             <tbody>
@@ -97,40 +97,40 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                             <tfoot>
                                 <tr>
                                     <th></th>
-                                    <th></th>
+                                    <!--<th></th>-->
                                     <th></th>
                                     <th id="totala" style="text-align: right;color: #00aaf1;"></th>
                                     <th id="totaldia" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalvata" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalnbta" style="text-align: right;color: #00aaf1;"></th>
+                                    <!--<th id="totalvata" style="text-align: right;color: #00aaf1;"></th>-->
+                                    <!--<th id="totalnbta" style="text-align: right;color: #00aaf1;"></th>-->
                                     <th id="totalneta" style="text-align: right;color: #00aaf1;"></th>
 
                                     <th id="totalcoa" style="text-align: right;color: #00aaf1;"></th>
                                     <th id="totalpr" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalca" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalcrda" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalcha" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalada" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalcra" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalrt" style="text-align: right;color: #00aaf1;"></th>
-                                    <th id="totalsettlle" style="text-align: right;color: #00aaf1;"></th>
+                                    <!--<th id="totalca" style="text-align: right;color: #00aaf1;"></th>-->
+                                    <!--<th id="totalcrda" style="text-align: right;color: #00aaf1;"></th>-->
+                                    <!--<th id="totalcha" style="text-align: right;color: #00aaf1;"></th>-->
+                                    <!--<th id="totalada" style="text-align: right;color: #00aaf1;"></th>-->
+                                    <!--<th id="totalcra" style="text-align: right;color: #00aaf1;"></th>-->
+                                    <!--<th id="totalrt" style="text-align: right;color: #00aaf1;"></th>-->
+                                    <!--<th id="totalsettlle" style="text-align: right;color: #00aaf1;"></th>-->
                                     
                                 </tr>
-                                <tr>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td colspan="4">Total Outstanding</td>
-                                    <td id="totalDue" style="color:#f00;font-weight:bold" colspan="2"></td>
-                                </tr>
+                                <!--<tr>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td></td>-->
+                                    <!--<td colspan="4">Total Outstanding</td>-->
+                                    <!--<td id="totalDue" style="color:#f00;font-weight:bold" colspan="2"></td>-->
+                                <!--</tr>-->
                             </tfoot>
                         </table>
                     </div>
@@ -205,24 +205,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         $("#saletable").append(row);
         
         row.append($("<td>" + rowData.InvDate + "</td>"));
-        row.append($("<td>" + rowData.RespectSign +" "+rowData.CusName+ "</td>"));
         row.append($("<td>" + rowData.SalesInvNo + "</td>"));
         row.append($("<td class='totalamount' align='right'>" + accounting.formatMoney(rowData.InvAmount) + "</td>"));
         row.append($("<td class='disamount' align='right'>" + accounting.formatMoney(rowData.DisAmount) + "</td>"));
-        row.append($("<td class='vatamount' align='right'>" + accounting.formatMoney(rowData.VatAmount) + "</td>"));
-        row.append($("<td class='nbtamount' align='right'>" + accounting.formatMoney(rowData.NbtAmount) + "</td>"));
         row.append($("<td class='netamount' align='right'>" + accounting.formatMoney(rowData.NetAmount) + "</td>"));
         row.append($("<td class='costamount' align='right'>" + accounting.formatMoney(rowData.CostAmount) + "</td>"));
         
         row.append($("<td class='profit' align='right'>" + accounting.formatMoney(rowData.InvAmount-rowData.DisAmount-rowData.CostAmount) + "</td>"));
-        row.append($("<td class='cashamount' align='right'>" + accounting.formatMoney(rowData.CashAmount) + "</td>"));
-        row.append($("<td class='ccardamount' align='right'>" + accounting.formatMoney(rowData.CCardAmount) + "</td>"));
-        row.append($("<td class='chequeamount' align='right'>" + accounting.formatMoney(rowData.ChequeAmount) + "</td>"));
-        row.append($("<td class='advanceamount' align='right'>" + accounting.formatMoney(rowData.AdvanceAmount) + "</td>"));
-        row.append($("<td class='creditamount' align='right'>" + accounting.formatMoney(rowData.CreditAmount) + "</td>"));
-        
-        row.append($("<td class='return' align='right'>" + accounting.formatMoney(rowData.ReturnAmount) + "</td>"));
-        row.append($("<td class='settlleamount' align='right'>" + accounting.formatMoney(rowData.SettledAmount) + "</td>"));
+       
     }
     function sumcolumn(rclass) {
         var sum = 0;

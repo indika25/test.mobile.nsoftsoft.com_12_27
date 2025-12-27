@@ -9,7 +9,7 @@ class Report_model extends CI_Model {
     }
 
     public function index() {
-        
+
     }
 
     public function loadroot() {
@@ -23,6 +23,15 @@ class Report_model extends CI_Model {
         $this->db->from('product');
         return $this->db->get()->result();
     }
+    public function loaduser() {
+        $this->db->select('users.first_name,users.active,users.role,users.id');
+        $this->db->from('users');
+        $this->db->where('users.active',1);
+        $this->db->where_in('users.role', [1, 4]);
+        return $this->db->get()->result();
+    }
+
+   
 
     public function loadSerialProduct() {
         $this->db->select('product.ProductCode,product.Prd_Description');
@@ -120,13 +129,13 @@ class Report_model extends CI_Model {
             if (isset($invtype) && $invtype != '') {
                 $this->db->where('salesinvoicehed.SalesInvType', $invtype);
             }
-            
+
             if (isset($salesperson) && $salesperson != '') {
                 $this->db->where('salesinvoicehed.SalesPerson', $salesperson);
             }
 
             // $this->db->group_by('DATE(SalesInvNo)');
-             $this->db->order_by('salesinvoicehed.SalesDate', 'DESC');
+            $this->db->order_by('salesinvoicehed.SalesDate', 'DESC');
             // $this->db->limit(50);
         } else {
             $this->db->select('customer.MobileNo,customer.CusCode,DATE(salesinvoicehed.SalesDate) As InvDate,(salesinvoicehed.SalesDisAmount) AS DisAmount,salesinvoicehed.SalesInvNo,
@@ -160,9 +169,9 @@ class Report_model extends CI_Model {
             if (isset($salesperson) && $salesperson != '') {
                 $this->db->where('salesinvoicehed.SalesPerson', $salesperson);
             }
-            
-            
-             $this->db->order_by('salesinvoicehed.SalesDate', 'DESC');
+
+
+            $this->db->order_by('salesinvoicehed.SalesDate', 'DESC');
             // $this->db->group_by('salesinvoicehed.SalesInvNo');
             // $this->db->order_by('SalesDate', 'DESC');
             // $this->db->limit(50);
@@ -185,7 +194,7 @@ class Report_model extends CI_Model {
                                 customer.RespectSign');
             $this->db->from('salesinvoicehed');
             $this->db->join('customer', 'customer.CusCode = salesinvoicehed.SalesCustomer', 'INNER');
-             $this->db->join('salesinvoicedtl', 'salesinvoicedtl.SalesInvNo = salesinvoicehed.SalesInvNo', 'INNER');
+            $this->db->join('salesinvoicedtl', 'salesinvoicedtl.SalesInvNo = salesinvoicehed.SalesInvNo', 'INNER');
             $this->db->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode', 'INNER');
             $this->db->join('creditinvoicedetails', 'creditinvoicedetails.InvoiceNo = salesinvoicehed.SalesInvNo', 'left');
             $this->db->where('DATE(salesinvoicehed.SalesDate) <=', $enddate);
@@ -228,7 +237,7 @@ class Report_model extends CI_Model {
                                 customer.RespectSign');
             $this->db->from('salesinvoicehed');
             $this->db->join('customer', 'customer.CusCode = salesinvoicehed.SalesCustomer', 'INNER');
-             $this->db->join('salesinvoicedtl', 'salesinvoicedtl.SalesInvNo = salesinvoicehed.SalesInvNo', 'INNER');
+            $this->db->join('salesinvoicedtl', 'salesinvoicedtl.SalesInvNo = salesinvoicehed.SalesInvNo', 'INNER');
             $this->db->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode', 'INNER');
             $this->db->join('creditinvoicedetails', 'creditinvoicedetails.InvoiceNo = salesinvoicehed.SalesInvNo', 'left');
             $this->db->where('DATE(salesinvoicehed.SalesDate) <=', $enddate);
@@ -261,7 +270,85 @@ class Report_model extends CI_Model {
         }
         return $this->db->get()->result();
     }
-    
+
+
+
+    public function gensalesreportbyroutefordepartment($startdate, $enddate, $location = NULL, $locationAr = NULL, $invtype, $salesperson = NULL, $product = NULL, $department = NULL, $subdepartment = NULL) {
+
+        $this->db->select('
+        customer.MobileNo,
+        customer.CusCode,
+        DATE(salesinvoicehed.SalesDate) AS InvDate,
+        salesinvoicedtl.SalesDisValue AS DisAmount,
+        salesinvoicehed.SalesInvNo,
+        salesinvoicedtl.SalesTotalAmount AS CashAmount,
+        salesinvoicedtl.SalesVatAmount AS VatAmount,
+        salesinvoicedtl.SalesNbtAmount AS NbtAmount,
+        SUM(salesinvoicedtl.SalesInvNetAmount) AS NetAmount,
+        salesinvoicedtl.SalesCostPrice AS CostAmount,
+        salesinvoicedtl.SalesProductCode AS ProCode,
+        SUM(salesinvoicedtl.SalesQty) AS Qty,
+        product.Prd_AppearName AS ProName,
+        department.Description AS DepName,
+        customer.CusName,
+        customer.RespectSign
+    ');
+
+        $this->db->from('salesinvoicehed');
+        $this->db->join('customer', 'customer.CusCode = salesinvoicehed.SalesCustomer', 'INNER');
+        $this->db->join('salesinvoicedtl', 'salesinvoicedtl.SalesInvNo = salesinvoicehed.SalesInvNo', 'INNER');
+        $this->db->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode', 'INNER');
+        $this->db->join('department', 'department.DepCode = product.DepCode', 'LEFT');
+        $this->db->join('creditinvoicedetails', 'creditinvoicedetails.InvoiceNo = salesinvoicehed.SalesInvNo', 'LEFT');
+
+        // Date filters
+        $this->db->where('DATE(salesinvoicehed.SalesDate) >=', $startdate);
+        $this->db->where('DATE(salesinvoicehed.SalesDate) <=', $enddate);
+
+        // Cancel check
+        $this->db->where('salesinvoicehed.InvIsCancel', 0);
+
+        // Location filter
+        if (!empty($locationAr)) {
+            $this->db->where_in('salesinvoicehed.SalesLocation', $locationAr);
+        }
+
+        // Invoice Type
+        if (!empty($invtype)) {
+            $this->db->where('salesinvoicehed.SalesInvType', $invtype);
+        }
+
+        // Salesperson
+        if (!empty($salesperson)) {
+            $this->db->where('salesinvoicehed.SalesPerson', $salesperson);
+        }
+
+        // Product
+        if (!empty($product)) {
+            $this->db->where('salesinvoicedtl.SalesProductCode', $product);
+        }
+
+        // Department
+        if (!empty($department)) {
+            $this->db->where('product.DepCode', $department);
+        }
+
+        // Sub-department
+        if (!empty($subdepartment)) {
+            $this->db->where('product.SubDepCode', $subdepartment);
+        }
+
+        // Order by invoice date
+        $this->db->group_by('department.Description');
+        $this->db->order_by('department.Description', 'ASC');
+
+
+
+        return $this->db->get()->result();
+    }
+
+
+
     public function genreportbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL) {
         if (isset($location) && $location != '') {
             $this->db->select('DATE(InvDate) As InvDate,SUM(InvDisAmount) AS DisAmount,
@@ -314,7 +401,7 @@ class Report_model extends CI_Model {
         return $this->db->get()->result();
     }
 
-    public function gencashreportbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL) {
+    public function gencashreportbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL,$user_id) {
         if (isset($location) && $location != '') {
             $this->db->select('DATE(InvDate) As InvDate,SUM(InvDisAmount) AS DisAmount,
                                 SUM(InvCashAmount) AS CashAmount,
@@ -330,9 +417,10 @@ class Report_model extends CI_Model {
                                 SUM(InvNetAmount) AS NetAmount,
                                 SUM(InvCustomerPayment) AS CustomerPayment,
                                 SUM(InvCostAmount) AS CostAmount,
-                                SUM(InvReturnPayment) AS ReturnAmount');
+                                SUM(InvReturnPayment) AS ReturnAmount,invoicehed.InvUser');
             $this->db->from('invoicehed');
             $this->db->where('DATE(InvDate) =', $enddate);
+            $this->db->where('invoicehed.InvUser',$user_id);
             // $this->db->where('DATE(InvDate) >=', $startdate);
             $this->db->where_in('InvLocation', $locationAr);
             $this->db->where('InvIsCancel', 0);
@@ -354,9 +442,10 @@ class Report_model extends CI_Model {
                                 SUM(InvNetAmount) AS NetAmount,
                                 SUM(InvCustomerPayment) AS CustomerPayment,
                                 SUM(InvCostAmount) AS CostAmount,
-                                SUM(InvReturnPayment) AS ReturnAmount');
+                                SUM(InvReturnPayment) AS ReturnAmount,invoicehed.InvUser');
             $this->db->from('invoicehed');
             $this->db->where('DATE(InvDate) =', $enddate);
+            $this->db->where('invoicehed.InvUser',$user_id);
             // $this->db->where('DATE(InvDate) >=', $startdate);
             $this->db->where('InvIsCancel', 0);
             $this->db->group_by('DATE(InvDate)');
@@ -520,7 +609,7 @@ class Report_model extends CI_Model {
         return $this->db->get()->result();
     }
 
-    public function genjobdaysumreportbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL) {
+    public function genjobdaysumreportbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL,$user_id) {
         if (isset($location) && $location != '') {
             $this->db->select('DATE(JobInvoiceDate) As InvDate,JobInvNo,(JobTotalDiscount) AS DisAmount,
                                 (JobCashAmount)+ (ThirdCashAmount) AS CashAmount,
@@ -532,12 +621,13 @@ class Report_model extends CI_Model {
                                 (JobAdvance) AS AdvanceAmount,
                                 (JobNetAmount) AS NetAmount,
                                 (JobVatAmount) AS VatAmount,
-                                (JobNbtAmount) AS NbtAmount,JRegNo,jobcarddtl.JobDescription');
+                                (JobNbtAmount) AS NbtAmount,JRegNo,jobcarddtl.JobDescription,jobinvoicehed.JobInvUser');
             $this->db->from('jobinvoicehed');
             $this->db->join('jobcarddtl', 'jobcarddtl.JobCardNo = jobinvoicehed.JobCardNo', 'INNER');
             $this->db->where('DATE(JobInvoiceDate) =', $enddate);
             // $this->db->where('DATE(JobInvoiceDate) >=', $startdate);
             $this->db->where_in('JobLocation', $locationAr);
+            $this->db->where('jobinvoicehed.JobInvUser',$user_id);
             $this->db->where('IsCancel', 0);
             $this->db->group_by('DATE(jobinvoicehed.JobCardNo)');
             $this->db->order_by('JobInvoiceDate', 'DESC');
@@ -553,12 +643,13 @@ class Report_model extends CI_Model {
                                 (JobAdvance) AS AdvanceAmount,
                                 (JobNetAmount) AS NetAmount,
                                 (JobVatAmount) AS VatAmount,
-                                (JobNbtAmount) AS NbtAmount,JRegNo,jobcarddtl.JobDescription');
+                                (JobNbtAmount) AS NbtAmount,JRegNo,jobcarddtl.JobDescription,jobinvoicehed.JobInvUser');
             $this->db->from('jobinvoicehed');
             $this->db->join('jobcarddtl', 'jobcarddtl.JobCardNo = jobinvoicehed.JobCardNo', 'INNER');
             $this->db->where('DATE(JobInvoiceDate) =', $enddate);
             // $this->db->where('DATE(JobInvoiceDate) >=', $startdate);
             $this->db->where('IsCancel', 0);
+             $this->db->where('jobinvoicehed.JobInvUser',$user_id);
             $this->db->group_by('DATE(jobinvoicehed.JobCardNo)');
             // $this->db->group_by('DATE(JobInvoiceDate)');
             $this->db->order_by('JobInvoiceDate', 'DESC');
@@ -613,7 +704,8 @@ class Report_model extends CI_Model {
         return $this->db->get()->result();
     }
 
-    public function genjobdaysalesumreportbypayment($startdate, $enddate, $location = NULL,$locationAr = NULL) {
+
+    public function genjobdaysalesumreportbypayment($startdate, $enddate, $location = NULL,$locationAr = NULL,$user_id) {
         if (isset($location) && $location != '') {
             $this->db->select('jobinvoicehed.*,jobinvoicepaydtl.*,jobcarddtl.JobDescription');
             $this->db->from('jobinvoicehed');
@@ -624,6 +716,7 @@ class Report_model extends CI_Model {
             // $this->db->where('DATE(JobInvDate) >=', $startdate);
             $this->db->where_in('JobLocation', $locationAr);
             $this->db->where('IsCancel', 0);
+            $this->db->where('jobinvoicehed.JobInvUser',$user_id);
             $this->db->group_by('(jobinvoicehed.JobCardNo)');
             $this->db->order_by('JobInvDate', 'DESC');
             // $this->db->limit(50);
@@ -636,7 +729,7 @@ class Report_model extends CI_Model {
             $this->db->where('DATE(JobInvDate) =', $enddate);
             // $this->db->where('DATE(JobInvoiceDate) >=', $startdate);
             $this->db->where('IsCancel', 0);
-
+             $this->db->where('jobinvoicehed.JobInvUser',$user_id);
             $this->db->group_by('(jobinvoicehed.JobCardNo)');
             // $this->db->group_by('DATE(JobInvoiceDate)');
             $this->db->order_by('JobInvDate', 'DESC');
@@ -720,7 +813,7 @@ class Report_model extends CI_Model {
             $this->db->order_by('SalesDate', 'DESC');
             // $this->db->limit(50);
         } else {
-             $this->db->select('salesinvoicehed.*,salesinvoicepaydtl.*');
+            $this->db->select('salesinvoicehed.*,salesinvoicepaydtl.*');
             $this->db->from('salesinvoicehed');
             $this->db->join('salesinvoicepaydtl', 'salesinvoicepaydtl.SalesInvNo = salesinvoicehed.SalesInvNo', 'INNER');
             // $this->db->where('JobInvPayType =', 'Cash');
@@ -734,14 +827,14 @@ class Report_model extends CI_Model {
         }
         return $this->db->get()->result();
     }
-
-    public function genjobdaycashsumreportbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL) {
+    public function genjobdaycashsumreportbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL,$user_id) {
         if (isset($location) && $location != '') {
-            $this->db->select('JobInvPayAmount,JobCreditAmount');
+            $this->db->select('JobInvPayAmount,JobCreditAmount,jobinvoicehed.JobInvUser');
             $this->db->from('jobinvoicehed');
             $this->db->join('jobinvoicepaydtl', 'jobinvoicepaydtl.JobInvNo = jobinvoicehed.JobInvNo', 'INNER');
             $this->db->join('jobcarddtl', 'jobcarddtl.JobCardNo = jobinvoicehed.JobCardNo', 'INNER');
             $this->db->where('JobInvPayType =', 'Cash');
+            $this->db->where('jobinvoicehed.JobInvUser',$user_id);
             $this->db->where('DATE(JobInvDate) =', $enddate);
             // $this->db->where('DATE(JobInvDate) >=', $startdate);
             $this->db->where_in('JobLocation', $locationAr);
@@ -750,11 +843,12 @@ class Report_model extends CI_Model {
             $this->db->order_by('JobInvoiceDate', 'DESC');
             // $this->db->limit(50);
         } else {
-            $this->db->select('JobInvPayAmount,JobCreditAmount');
+            $this->db->select('JobInvPayAmount,JobCreditAmount,jobinvoicehed.JobInvUser');
             $this->db->from('jobinvoicehed');
             $this->db->join('jobinvoicepaydtl', 'jobinvoicepaydtl.JobInvNo = jobinvoicehed.JobInvNo', 'INNER');
             $this->db->join('jobcarddtl', 'jobcarddtl.JobCardNo = jobinvoicehed.JobCardNo', 'INNER');
             $this->db->where('JobInvPayType =', 'Cash');
+             $this->db->where('jobinvoicehed.JobInvUser',$user_id);
             $this->db->where('DATE(JobInvoiceDate) =', $enddate);
             // $this->db->where('DATE(JobInvoiceDate) >=', $startdate);
             $this->db->where('IsCancel', 0);
@@ -826,29 +920,29 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('JobCode', $product);
         }
-        
-         if (isset($dep) && $dep != '' ) {
+
+        if (isset($dep) && $dep != '' ) {
             $this->db->where('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
-        
+
 //        $this->db->group_by('invoicedtl.InvNo');
         $this->db->order_by('jobinvoicehed.JobInvoiceDate');
         $this->db->order_by('product.DepCode', 'ASC');
         $this->db->order_by('product.SubDepCode', 'ASC');
         $this->db->order_by('product.CategoryCode', 'ASC');
         // $this->db->limit(50);
-        
-        
+
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->Description][] = $row;
@@ -886,27 +980,27 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('jobinvoicedtl.JobType', $product);
         }
-        
+
         //  if (isset($dep) && $dep != '' ) {
         //     $this->db->where('product.DepCode', $dep);
         // }
-        
+
         // if (isset($subdep) && $subdep != '' ) {
         //     $this->db->where('product.SubDepCode', $subdep);
         // }
-        
+
         // if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
         //     $this->db->where_in('product.SubCategoryCode', $subcat);
         // }
-        
+
 //        $this->db->group_by('invoicedtl.InvNo');
         $this->db->order_by('jobinvoicehed.JobInvNo');
         $this->db->order_by('jobtype.jobtype_order', 'ASC');
         // $this->db->limit(50);
-        
-        
+
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->jobtype_name][] = $row;
@@ -915,7 +1009,7 @@ class Report_model extends CI_Model {
     }
 
     public function genjobreportbymake($startdate, $enddate, $location = NULL, $product = NULL,$locationAr = NULL,$dep,$subdep,$subcat) {
-         $this->db->select('(JobInvoiceDate) As InvDate,JobInvNo,jobinvoicehed.JobCardNo,(JobTotalDiscount) AS DisAmount,
+        $this->db->select('(JobInvoiceDate) As InvDate,JobInvNo,jobinvoicehed.JobCardNo,(JobTotalDiscount) AS DisAmount,
                                 (JobCashAmount)+ (ThirdCashAmount) AS CashAmount,
                                 (JobCardAmount)+ (ThirdCardAmount) AS CCardAmount,
                                 (JobCreditAmount)+ (ThirdCreditAmount) AS CreditAmount,
@@ -926,14 +1020,14 @@ class Report_model extends CI_Model {
                                 (JobNetAmount) AS NetAmount,
                                 (JobVatAmount) AS VatAmount,
                                 (JobNbtAmount) AS NbtAmount,job_section.JobSection,make.make,jobinvoicehed.JRegNo,Count(JobInvNo) AS count');
-            $this->db->from('jobinvoicehed');
-            $this->db->join('jobcardhed', 'jobinvoicehed.JobCardNo = jobcardhed.JobCardNo', 'INNER');
-            $this->db->join('job_section', 'job_section.JobSecNo = jobcardhed.Jsection', 'INNER');
-            $this->db->join('vehicledetail', 'jobinvoicehed.JRegNo = vehicledetail.RegNo', 'INNER');
-            $this->db->join('make', 'make.make_id = vehicledetail.Make', 'INNER');
-            $this->db->where('DATE(JobInvoiceDate) <=', $enddate);
-            $this->db->where('DATE(JobInvoiceDate) >=', $startdate);
-            $this->db->where_in('JobLocation', $locationAr);
+        $this->db->from('jobinvoicehed');
+        $this->db->join('jobcardhed', 'jobinvoicehed.JobCardNo = jobcardhed.JobCardNo', 'INNER');
+        $this->db->join('job_section', 'job_section.JobSecNo = jobcardhed.Jsection', 'INNER');
+        $this->db->join('vehicledetail', 'jobinvoicehed.JRegNo = vehicledetail.RegNo', 'INNER');
+        $this->db->join('make', 'make.make_id = vehicledetail.Make', 'INNER');
+        $this->db->where('DATE(JobInvoiceDate) <=', $enddate);
+        $this->db->where('DATE(JobInvoiceDate) >=', $startdate);
+        $this->db->where_in('JobLocation', $locationAr);
         $this->db->where('jobinvoicehed.IsCancel', 0);
         if (isset($location) && $location != '') {
             $this->db->where_in('jobinvoicehed.JobLocation', $locationAr);
@@ -941,27 +1035,27 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('jobcardhed.Jsection', $product);
         }
-        
-         if (isset($dep) && $dep != '' ) {
+
+        if (isset($dep) && $dep != '' ) {
             $this->db->where('vehicledetail.Make', $dep);
         }
-        
+
         // if (isset($subdep) && $subdep != '' ) {
         //     $this->db->where('product.SubDepCode', $subdep);
         // }
-        
+
         // if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
         //     $this->db->where_in('product.SubCategoryCode', $subcat);
         // }
-        
-       $this->db->group_by('jobinvoicehed.JobInvNo');
+
+        $this->db->group_by('jobinvoicehed.JobInvNo');
         $this->db->order_by('jobinvoicehed.JobInvNo');
         $this->db->order_by('job_section.JobSecNo', 'ASC');
         // $this->db->limit(50);
-        
-        
+
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->JobSection][$row->make][] = $row;
@@ -999,27 +1093,27 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('jobinvoicedtl.JobType', $product);
         }
-        
+
         //  if (isset($dep) && $dep != '' ) {
         //     $this->db->where('product.DepCode', $dep);
         // }
-        
+
         // if (isset($subdep) && $subdep != '' ) {
         //     $this->db->where('product.SubDepCode', $subdep);
         // }
-        
+
         // if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
         //     $this->db->where_in('product.SubCategoryCode', $subcat);
         // }
-        
+
 //        $this->db->group_by('invoicedtl.InvNo');
         $this->db->order_by('jobinvoicehed.JobInvNo');
         $this->db->order_by('jobtype.jobtype_order', 'ASC');
         // $this->db->limit(50);
-        
-        
+
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->JobInvNo." | ".$row->JobInvoiceDate][] = $row;
@@ -1046,24 +1140,24 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('jobinvoicedtl.JobType', $product);
         }
-        
+
         //  if (isset($dep) && $dep != '' ) {
         //     $this->db->where('product.DepCode', $dep);
         // }
-        
+
         // if (isset($subdep) && $subdep != '' ) {
         //     $this->db->where('product.SubDepCode', $subdep);
         // }
-        
+
         // if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
         //     $this->db->where_in('product.SubCategoryCode', $subcat);
         // }
-        
+
         // $this->db->group_by('invoicedtl.InvNo');
         $this->db->order_by('jobinvoicehed.JobInvNo');
-        
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->JobInvNo." | ".$row->JobInvoiceDate." | ".$row->JobCardNo." | ".$row->CusName." ------------ Total Invoice Amount - ".$row->JobNetAmount][] = $row;
@@ -1087,15 +1181,15 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('JobCode', $product);
         }
-        
+
         if (isset($dep) && $dep != '' ) {
             $this->db->where('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
@@ -1142,29 +1236,29 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('InvProductCode', $product);
         }
-        
-         if (isset($dep) && $dep != '' ) {
+
+        if (isset($dep) && $dep != '' ) {
             $this->db->where('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
-        
+
 //        $this->db->group_by('invoicedtl.InvNo');
         $this->db->order_by('invoicehed.InvDate');
         $this->db->order_by('product.DepCode', 'ASC');
         $this->db->order_by('product.SubDepCode', 'ASC');
         $this->db->order_by('product.CategoryCode', 'ASC');
         // $this->db->limit(50);
-        
-        
+
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->Description][] = $row;
@@ -1172,7 +1266,7 @@ class Report_model extends CI_Model {
         return $list;
     }
 
-    public function gencashreportbyproduct($startdate, $enddate, $location = NULL, $locationAr = NULL) {
+     public function gencashreportbyproduct($startdate, $enddate, $location = NULL, $locationAr = NULL,$user_id) {
         $this->db->select('InvProductCode,
                            invoicehed.InvNo,invoicehed.InvCashAmount,invoicehed.InvChequeAmount,invoicehed.InvCreditAmount,invoicehed.InvCCardAmount,
                            DATE(invoicehed.InvDate) AS InvDate,
@@ -1189,13 +1283,14 @@ class Report_model extends CI_Model {
                            (invoicehed.InvDisAmount) AS TotalDiscount,
                            product.DepCode,
                            product.SubCategoryCode,
-                (invoicedtl.InvSerialNo) AS Serial');
+                (invoicedtl.InvSerialNo) AS Serial,invoicehed.InvUser');
         $this->db->from('invoicedtl');
         $this->db->join('invoicehed', 'invoicehed.InvNo = invoicedtl.InvNo', 'INNER');
         $this->db->join('product', 'product.ProductCode = invoicedtl.InvProductCode', 'INNER');
         $this->db->where('DATE(invoicehed.InvDate) =', $enddate);
         // $this->db->where('DATE(invoicehed.InvDate) >=', $startdate);
         $this->db->where('invoicehed.InvIsCancel', 0);
+         $this->db->where('invoicehed.InvUser', $user_id);
         if (isset($location) && $location != '') {
             $this->db->where_in('invoicehed.InvLocation', $locationAr);
         }
@@ -1238,7 +1333,7 @@ class Report_model extends CI_Model {
         return $result;
     }
 
-    public function gencashreportbypart($startdate, $enddate, $location = NULL, $locationAr = NULL) {
+    public function gencashreportbypart($startdate, $enddate, $location = NULL, $locationAr = NULL,$user_id) {
         $this->db->select('SalesProductCode,
                            salesinvoicehed.SalesInvNo,salesinvoicehed.SalesCashAmount,salesinvoicehed.SalesChequeAmount,salesinvoicehed.SalesBankAmount,salesinvoicehed.SalesCreditAmount,salesinvoicehed.SalesCCardAmount,SalesAdvancePayment,
                            DATE(salesinvoicehed.SalesDate) AS InvDate,
@@ -1253,12 +1348,13 @@ class Report_model extends CI_Model {
                            (salesinvoicehed.SalesNetAmount) AS NetAmount,
                            (SalesReturnQty) AS ReturnQty,
                            (salesinvoicehed.SalesDisAmount) AS TotalDiscount,
-                (salesinvoicedtl.SalesSerialNo) AS Serial');
+                (salesinvoicedtl.SalesSerialNo) AS Serial,salesinvoicehed.SalesInvUser');
         $this->db->from('salesinvoicedtl');
         $this->db->join('salesinvoicehed', 'salesinvoicehed.SalesInvNo = salesinvoicedtl.SalesInvNo', 'INNER');
         $this->db->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode', 'left');
         $this->db->where('DATE(salesinvoicehed.SalesDate) =', $enddate);
         // $this->db->where('DATE(invoicehed.InvDate) >=', $startdate);
+        $this->db->where('salesinvoicehed.SalesInvUser',$user_id);
         $this->db->where('salesinvoicehed.InvIsCancel', 0);
         if (isset($location) && $location != '') {
             $this->db->where_in('salesinvoicehed.SalesLocation', $locationAr);
@@ -1269,7 +1365,7 @@ class Report_model extends CI_Model {
         return $result;
     }
 
-    public function gencashreportbyeasy($startdate, $enddate, $location = NULL, $locationAr = NULL) {
+    public function gencashreportbyeasy($startdate, $enddate, $location = NULL, $locationAr = NULL,$user_id) {
         $this->db->select('InvProductCode,
                            invoice_hed.InvNo,invoice_hed.DownPayment,invoice_hed.FinalAmount, (invoice_hed.FinalAmount + invoice_hed.DownPayment) AS DueAmount,
                            DATE(invoice_hed.InvDate) AS InvDate,
@@ -1284,13 +1380,14 @@ class Report_model extends CI_Model {
                            (invoice_hed.FinalAmount) AS NetAmount,
                            (InvReturnQty) AS ReturnQty,
                            (invoice_hed.DisAmount) AS TotalDiscount,
-                (invoice_dtl.InvSerialNo) AS Serial');
+                (invoice_dtl.InvSerialNo) AS Serial,invoice_hed.InvUser');
         $this->db->from('invoice_dtl');
         $this->db->join('invoice_hed', 'invoice_hed.InvNo = invoice_dtl.InvNo', 'INNER');
         $this->db->join('product', 'product.ProductCode = invoice_dtl.InvProductCode', 'left');
         $this->db->where('DATE(invoice_hed.InvDate) =', $enddate);
         // $this->db->where('DATE(invoicehed.InvDate) >=', $startdate);
         $this->db->where('invoice_hed.IsCancel', 0);
+         $this->db->where('invoice_hed.InvUser',$user_id);
         if (isset($location) && $location != '') {
             $this->db->where_in('invoice_hed.Location', $locationAr);
         }
@@ -1300,7 +1397,7 @@ class Report_model extends CI_Model {
         return $result;
     }
 
-    public function gencashreportbycoder($startdate, $enddate, $location = NULL, $locationAr = NULL)
+    public function gencashreportbycoder($startdate, $enddate, $location = NULL, $locationAr = NULL,$user_id)
     {
         $this->db->select('customerorderdtl.ProductCode,
                            customerorderhed.PO_No,customerorderhed.PO_NetAmount,
@@ -1313,11 +1410,12 @@ class Report_model extends CI_Model {
                            (customerorderdtl.PO_TotalAmount) AS TotalAmount,
                            (customerorderdtl.PO_DisAmount) AS DisAmount,
                            (customerorderhed.PO_NetAmount) AS NetAmount,
-                           (customerorderhed.PO_TDisAmount) AS TotalDiscount');
+                           (customerorderhed.PO_TDisAmount) AS TotalDiscount,customerorderhed.PO_User');
         $this->db->from('customerorderdtl');
         $this->db->join('customerorderhed', 'customerorderhed.PO_No = customerorderdtl.PO_No', 'INNER');
         $this->db->join('product', 'product.ProductCode = customerorderdtl.ProductCode', 'left');
         $this->db->where('DATE(customerorderhed.PO_Date) =', $enddate);
+        $this->db->where('customerorderhed.PO_User', $user_id);
         // $this->db->where('DATE(invoicehed.InvDate) >=', $startdate);
         $this->db->where('customerorderhed.IsCancel', 0);
         if (isset($location) && $location != '') {
@@ -1328,7 +1426,7 @@ class Report_model extends CI_Model {
         $result=$this->db->get()->result();
         return $result;
     }
-    
+
     public function gencashreportbycoderdaterange($startdate, $enddate, $location = NULL, $locationAr = NULL)
     {
         $this->db->select('customerorderdtl.ProductCode,
@@ -1347,7 +1445,7 @@ class Report_model extends CI_Model {
         $this->db->join('customerorderhed', 'customerorderhed.PO_No = customerorderdtl.PO_No', 'INNER');
         $this->db->join('product', 'product.ProductCode = customerorderdtl.ProductCode', 'left');
         $this->db->where('DATE(customerorderhed.PO_Date) <=', $enddate);
-         $this->db->where('DATE(customerorderhed.PO_Date) >=', $startdate);
+        $this->db->where('DATE(customerorderhed.PO_Date) >=', $startdate);
         $this->db->where('customerorderhed.IsCancel', 0);
         if (isset($location) && $location != '') {
             $this->db->where_in('customerorderhed.PO_Location', $locationAr);
@@ -1378,7 +1476,7 @@ class Report_model extends CI_Model {
         $this->db->join('salesinvoicehed', 'salesinvoicehed.SalesInvNo = salesinvoicedtl.SalesInvNo', 'INNER');
         $this->db->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode', 'left');
         $this->db->where('DATE(salesinvoicehed.SalesDate) <=', $enddate);
-         $this->db->where('DATE(salesinvoicehed.SalesDate) >=', $startdate);
+        $this->db->where('DATE(salesinvoicehed.SalesDate) >=', $startdate);
         $this->db->where('salesinvoicehed.InvIsCancel', 0);
         if (isset($location) && $location != '') {
             $this->db->where_in('salesinvoicehed.SalesLocation', $locationAr);
@@ -1426,7 +1524,7 @@ class Report_model extends CI_Model {
         $this->db->join('invoice_hed', 'invoice_hed.InvNo = invoice_dtl.InvNo', 'INNER');
         $this->db->join('product', 'product.ProductCode = invoice_dtl.InvProductCode', 'left');
         $this->db->where('DATE(invoice_hed.InvDate) <=', $enddate);
-         $this->db->where('DATE(invoice_hed.InvDate) >=', $startdate);
+        $this->db->where('DATE(invoice_hed.InvDate) >=', $startdate);
         $this->db->where('invoice_hed.IsCancel', 0);
         if (isset($location) && $location != '') {
             $this->db->where_in('invoice_hed.Location', $locationAr);
@@ -1468,15 +1566,15 @@ class Report_model extends CI_Model {
         if (isset($product) && $product != '') {
             $this->db->where('InvProductCode', $product);
         }
-        
+
         if (isset($dep) && $dep != '' ) {
             $this->db->where('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
@@ -1490,27 +1588,28 @@ class Report_model extends CI_Model {
         }
         return $list;
     }
-    
-    public function expensesbydate($route,$startdate, $enddate, $isExp = NULL) {
-        $this->db->select('SUM(FlotAmount) AS FlotAmount');
+
+     public function expensesbydate($route,$startdate, $enddate, $isExp = NULL,$user_id) {
+        $this->db->select('SUM(FlotAmount) AS FlotAmount,cashflot.SystemUser');
         $this->db->from('cashflot');
         $this->db->join('transactiontypes', 'transactiontypes.TransactionCode = cashflot.TransactionCode', 'INNER');
         $this->db->where('DATE(cashflot.FlotDate) <=', $enddate);
         $this->db->where('DATE(cashflot.FlotDate) >=', $startdate);
+        $this->db->where('cashflot.SystemUser',$user_id);
         if (isset($route) && $route != '') {
             $this->db->where_in('cashflot.Location', $route);
         }
-        
+
         $this->db->where('transactiontypes.IsExpenses', $isExp);
         $result=$this->db->get();
-        
+
         $list=0;
         foreach ($result->result() as $row) {
             $list += $row->FlotAmount;
         }
         return $list;
     }
-    
+
     public function searchproduct($q) {
         $this->db->select('ProductCode AS id,Prd_Description AS text');
         $this->db->from('product');
@@ -1519,7 +1618,7 @@ class Report_model extends CI_Model {
         $this->db->limit(50);
         return $this->db->get()->result();
     }
-    
+
     public function searchsupplier($q) {
         $this->db->select('SupCode AS id,SupName AS text');
         $this->db->from('supplier');
@@ -1527,7 +1626,7 @@ class Report_model extends CI_Model {
         $this->db->limit(50);
         return $this->db->get()->result();
     }
-    
+
     public function searchdepartment($q) {
         $this->db->select('DepCode AS id,Description AS text');
         $this->db->from('department');
@@ -1536,7 +1635,7 @@ class Report_model extends CI_Model {
         $this->db->limit(50);
         return $this->db->get()->result();
     }
-    
+
     public function searchsubdepartment($q,$cat) {
         $this->db->select('subdepartment.SubDepCode AS id,subdepartment.Description AS text');
         $this->db->from('subdepartment');
@@ -1547,7 +1646,7 @@ class Report_model extends CI_Model {
         $this->db->limit(50);
         return $this->db->get()->result();
     }
-    
+
     public function searchsubcategory($q,$cat,$cat2) {
         $this->db->select('subcategory.SubCategoryCode AS id,subcategory.Description AS text');
         $this->db->from('subcategory');
@@ -1561,32 +1660,32 @@ class Report_model extends CI_Model {
 
     public function searchcustomer($q) {
         $this->db->select('customer.CusCode AS id,customer.CusName AS text');
-                        $this->db->from('customer');
-                        $this->db->where('IsActive',1);
-                        $this->db->like("CONCAT(customer.CusCode,' ',customer.CusName)", $q);
-                        $this->db->group_by('customer.CusName');
-                        $this->db->limit(50);
-                    
+        $this->db->from('customer');
+        $this->db->where('IsActive',1);
+        $this->db->like("CONCAT(customer.CusCode,' ',customer.CusName)", $q);
+        $this->db->group_by('customer.CusName');
+        $this->db->limit(50);
+
         return $this->db->get()->result();
     }
 
     public function searchvehicle($q) {
         $this->db->select('vehicledetail.RegNo AS id,vehicledetail.RegNo AS text');
-                        $this->db->from('vehicledetail');
-                        $this->db->like("CONCAT(vehicledetail.RegNo)", $q);
-                        $this->db->group_by('vehicledetail.VehicleId');
-                        $this->db->limit(50);
-                    
+        $this->db->from('vehicledetail');
+        $this->db->like("CONCAT(vehicledetail.RegNo)", $q);
+        $this->db->group_by('vehicledetail.VehicleId');
+        $this->db->limit(50);
+
         return $this->db->get()->result();
     }
 
     public function searchmake($q) {
         $this->db->select('make.make_id AS id,make.make AS text');
-                        $this->db->from('make');
-                        $this->db->like("CONCAT(make.make)", $q);
-                        $this->db->group_by('make.make_id');
-                        $this->db->limit(50);
-                    
+        $this->db->from('make');
+        $this->db->like("CONCAT(make.make)", $q);
+        $this->db->group_by('make.make_id');
+        $this->db->limit(50);
+
         return $this->db->get()->result();
     }
 
@@ -1601,13 +1700,13 @@ class Report_model extends CI_Model {
                            subdepartment.Description,
                            location.location,
                            productstock.Stock,
-                           productprice.ProductPrice,
+                           product.Prd_SetAPrice AS ProductPrice,
                            supplier.SupName');
         $this->db->from('product');
         $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'LEFT');
         $this->db->join('productstock', 'productstock.ProductCode = product.ProductCode', 'LEFT');
         $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
-        $this->db->join('productprice', 'productprice.ProductCode = product.ProductCode', 'LEFT');
+        // $this->db->join('productprice', 'productprice.ProductCode = product.ProductCode', 'LEFT');
         $this->db->join('subcategory', 'subcategory.SubCategoryCode = product.SubCategoryCode', 'left');
         $this->db->join('location', 'location.location_id = productstock.Location', 'INNER');
         $this->db->where('product.Prd_IsActive', 1);
@@ -1620,15 +1719,15 @@ class Report_model extends CI_Model {
         if (isset($dep) && $dep != '' ) {
             $this->db->where_in('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where_in('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
-        
+
         if (isset($sup) && $sup != '') {
             $this->db->where('product.Prd_Supplier', $sup);
         }
@@ -1637,16 +1736,94 @@ class Report_model extends CI_Model {
         $this->db->order_by('product.CategoryCode', 'ASC');
 //        $this->db->order_by('product.SubCategoryCode', 'ASC');
         $this->db->order_by('subcategory.Description', 'ASC');
-        
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->Description][] = $row;
         }
         return $list;
     }
+
+    public function allproductdetail($route, $isall, $product = NULL,$dep,$subdep,$sup,$subcat) {
+        $this->db->select('product.ProductCode,
+                           product.Prd_Description,
+                           product.Prd_CostPrice,
+                           product.SubDepCode,
+                           product.Prd_ROL,
+                           product.Prd_ROQ,
+                           product.branchCost,
+                           subdepartment.Description,                           
+                           productprice.ProductPrice,
+                           supplier.SupName');
+        $this->db->from('product');
+        $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'LEFT');
+        $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
+        $this->db->join('productprice', 'productprice.ProductCode = product.ProductCode', 'LEFT');
+        $this->db->join('subcategory', 'subcategory.SubCategoryCode = product.SubCategoryCode', 'left');
+        $this->db->where('product.Prd_IsActive', 1);
+
+        if (isset($product) && $product != '' && $isall == 0) {
+            $this->db->where('product.ProductCode', $product);
+        }
+        if (isset($dep) && $dep != '' ) {
+            $this->db->where_in('product.DepCode', $dep);
+        }
+
+        if (isset($subdep) && $subdep != '' ) {
+            $this->db->where_in('product.SubDepCode', $subdep);
+        }
+
+        if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
+            $this->db->where_in('product.SubCategoryCode', $subcat);
+        }
+
+        if (isset($sup) && $sup != '') {
+            $this->db->where('product.Prd_Supplier', $sup);
+        }
+        $this->db->order_by('product.DepCode', 'ASC');
+        $this->db->order_by('product.SubDepCode', 'ASC');
+        $this->db->order_by('product.CategoryCode', 'ASC');
+        $this->db->order_by('subcategory.Description', 'ASC');
+
+        $result=$this->db->get();
+
+        $list = array();
+        foreach ($result->result() as $row) {
+            $list[$row->Description][] = $row;
+        }
+        return $list;
+    }
+
+    public function loadDepartmentWiseProduct($dep) {
+   
+        $this->db->select('SUM(productstock.Stock) AS Stock, SUM(product.Prd_CostPrice) AS CostPrice,
+                           department.Description');
+        $this->db->from('product');
+         $this->db->join('productstock', 'productstock.ProductCode = product.ProductCode', 'INNER');
+          $this->db->join('department', 'department.DepCode = product.DepCode', 'INNER');
+        $this->db->where('product.Prd_IsActive', 1);
+
+        
+        if (isset($dep) && $dep != '' ) {
+            $this->db->where_in('product.DepCode', $dep);
+        }
+
+        $this->db->group_by('product.DepCode');
+        $this->db->order_by('product.DepCode', 'ASC');
     
+
+        $result=$this->db->get();
+       
+
+        $list = array();
+        foreach ($result->result() as $row) {
+             $list[$row->Description][] = $row;
+        }
+        return $list;
+    }
+
     public function lowproductdetail($route, $isall, $product = NULL,$dep,$subdep,$sup,$subcat) {
         $this->db->select('product.ProductCode,
                             product.Prd_Description,
@@ -1666,7 +1843,7 @@ class Report_model extends CI_Model {
         $this->db->join('location', 'location.location_id = productstock.Location', 'INNER');
         $this->db->where('productstock.Stock < product.Prd_ROL');
         $this->db->where('product.Prd_IsActive', 1);
-        
+
         if (isset($route) && $route != '') {
             $this->db->where_in('productstock.Location', $route);
         }
@@ -1676,15 +1853,15 @@ class Report_model extends CI_Model {
         if (isset($dep) && $dep != '' ) {
             $this->db->where_in('product.DepCode', $dep);
         }
-        
+
         if (isset($dep) && $dep != '' && isset($subdep) && $subdep != '' ) {
             $this->db->where_in('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
-        
+
         if (isset($sup) && $sup != '') {
             $this->db->where('product.Prd_Supplier', $sup);
         }
@@ -1694,7 +1871,7 @@ class Report_model extends CI_Model {
         $this->db->order_by('product.SubCategoryCode', 'ASC');
 //        $this->db->order_by('subcategory.Description', 'ASC');
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->Description][] = $row;
@@ -1707,7 +1884,7 @@ class Report_model extends CI_Model {
                             product.Prd_Description,
                             product.SubDepCode,
                             subdepartment.Description,
-                            product.Prd_CostPrice,
+                            pricestock.UnitCost AS Prd_CostPrice,
                             location.location,
                             pricestock.Stock,
                             pricestock.Price,
@@ -1728,7 +1905,7 @@ class Report_model extends CI_Model {
         if (isset($dep) && $dep != '' ) {
             $this->db->where('product.DepCode', $dep);
         }
-        
+
         if (isset($dep) && $dep != '' && isset($subdep) && $subdep != '' ) {
             $this->db->where('product.SubDepCode', $subdep);
         }
@@ -1748,7 +1925,65 @@ class Report_model extends CI_Model {
         return $list;
     }
 
-    public function productdetailserial($route, $isall, $product = NULL,$dep,$subdep,$sup,$subcat) {
+    public function productdetailserial($transfer,$route, $isall, $product = NULL,$dep,$subdep,$sup,$subcat) {
+
+        $this->db->select('product.ProductCode,
+                            product.Prd_Description,
+                            pricestock.UnitCost AS Prd_CostPrice,
+                            location.location,
+                            productserialstock.Quantity,
+                            productserialstock.SerialNo,
+                            supplier.SupName,
+                            subdepartment.Description,
+                            goodsreceivenotehed.GRN_DateORG');
+        $this->db->from('product');
+        $this->db->join('pricestock', 'pricestock.PSCode  = product.ProductCode', 'Left');
+        $this->db->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode', 'Left');
+        $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
+        $this->db->join('location', 'location.location_id = productserialstock.Location', 'INNER');
+        $this->db->join('goodsreceivenotehed', 'goodsreceivenotehed.GRN_No = productserialstock.GrnNo', 'Left');
+        $this->db->join('goodsreceivenotedtl', 'goodsreceivenotehed.GRN_No = goodsreceivenotedtl.GRN_No', 'INNER');
+        $this->db->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode', 'INNER');
+        $this->db->where('product.Prd_IsActive', 1);
+
+        if (isset($isall) && $isall == 'all') {
+        }elseif (isset($isall) && $isall == '1') {
+            $this->db->where('productserialstock.Quantity', $isall);
+        }elseif (isset($isall) && $isall == '0') {
+            $this->db->where('productserialstock.Quantity', $isall);
+        }
+
+        if (isset($route) && $route != '' && count($route)>0) {
+            $this->db->where_in('productserialstock.Location', $route);
+        }
+        if (isset($product) && $product != '' && $isall == 0) {
+            $this->db->where('product.ProductCode', $product);
+        }
+        if (isset($dep) && $dep != '' ) {
+            $this->db->where_in('product.DepCode', $dep);
+        }
+
+        if (isset($subdep) && $subdep != '' ) {
+            $this->db->where_in('product.SubDepCode', $subdep);
+        }
+
+        if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
+            $this->db->where_in('product.SubCategoryCode', $subcat);
+        }
+
+        if (isset($sup) && $sup != '') {
+            $this->db->where('product.Prd_Supplier', $sup);
+        }
+        $this->db->group_by('productserialstock.SerialNo');
+        $this->db->order_by('product.DepCode', 'ASC');
+        $this->db->order_by('product.SubDepCode', 'ASC');
+        $this->db->order_by('product.CategoryCode', 'ASC');
+        $this->db->order_by('product.SubCategoryCode', 'ASC');
+//        $this->db->order_by('subcategory.Description', 'ASC');
+
+        $result=$this->db->get();
+
+
         $this->db->select('product.ProductCode,
                             product.Prd_Description,
                             product.Prd_CostPrice AS Prd_CostPrice,
@@ -1757,25 +1992,98 @@ class Report_model extends CI_Model {
                             productserialstock.SerialNo,
                             supplier.SupName,
                             subdepartment.Description,
-                            goodsreceivenotehed.GRN_DateORG');
+                            materialrequestnotehed.MrnDateORG As GRN_DateORG');
         $this->db->from('product');
-        $this->db->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode', 'INNER');
+        $this->db->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode', 'left');
         $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
         $this->db->join('location', 'location.location_id = productserialstock.Location', 'INNER');
-        $this->db->join('goodsreceivenotehed', 'goodsreceivenotehed.GRN_No = productserialstock.GrnNo', 'Left');
+        $this->db->join('materialrequestnotehed', 'materialrequestnotehed.MrnNo = productserialstock.GrnNo', 'Left');
+        $this->db->join('materialrequestnotedtl', 'materialrequestnotehed.MrnNo = materialrequestnotedtl.MrnNo', 'INNER');
+        $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'INNER');
+        $this->db->where('product.Prd_IsActive', 1);
+
+        if (isset($isall) && $isall == 'all') {
+        }elseif (isset($isall) && $isall == '1') {
+            $this->db->where('productserialstock.Quantity', $isall);
+        }elseif (isset($isall) && $isall == '0') {
+            $this->db->where('productserialstock.Quantity', $isall);
+        }
+
+        if (isset($route) && $route != '' && count($route)>0) {
+            $this->db->where_in('productserialstock.Location', $route);
+        }
+        if (isset($product) && $product != '' && $isall == 0) {
+            $this->db->where('product.ProductCode', $product);
+        }
+        if (isset($dep) && $dep != '' ) {
+            $this->db->where_in('product.DepCode', $dep);
+        }
+
+        if (isset($subdep) && $subdep != '' ) {
+            $this->db->where_in('product.SubDepCode', $subdep);
+        }
+
+        if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
+            $this->db->where_in('product.SubCategoryCode', $subcat);
+        }
+
+        if (isset($sup) && $sup != '') {
+            $this->db->where('product.Prd_Supplier', $sup);
+        }
+        $this->db->group_by('productserialstock.SerialNo');
+        $this->db->order_by('product.DepCode', 'ASC');
+        $this->db->order_by('product.SubDepCode', 'ASC');
+        $this->db->order_by('product.CategoryCode', 'ASC');
+        $this->db->order_by('product.SubCategoryCode', 'ASC');
+//        $this->db->order_by('subcategory.Description', 'ASC');
+
+        $result2=$this->db->get();
+
+        $list = array();
+        if (isset($transfer) && $transfer == 'transfer'){
+            foreach ($result2->result() as $row) {
+                $list[$row->Description][] = $row;
+            }
+        } else{
+            foreach ($result->result() as $row) {
+                $list[$row->Description][] = $row;
+            }
+        }
+
+        return $list;
+    }
+
+
+    public function loadiemisockreport($transfer,$route, $isall, $product = NULL,$dep,$subdep,$sup,$subcat) {
+
+        $this->db->select('product.ProductCode,
+                            product.Prd_Description,
+                             pricestock.UnitCost AS Prd_CostPrice,
+                            location.location,
+                            productimeistock.Quantity,
+                            productimeistock.EmiNo,
+                            supplier.SupName,
+                            subdepartment.Description,
+                            goodsreceivenotehed.GRN_DateORG');
+        $this->db->from('product');
+        $this->db->join('pricestock', 'pricestock.PSCode  = product.ProductCode', 'Left');
+        $this->db->join('productimeistock', 'productimeistock.ProductCode = product.ProductCode', 'Left');
+        $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
+        $this->db->join('location', 'location.location_id = productimeistock.Location', 'INNER');
+        $this->db->join('goodsreceivenotehed', 'goodsreceivenotehed.GRN_No = productimeistock.GrnNo', 'Left');
         $this->db->join('goodsreceivenotedtl', 'goodsreceivenotehed.GRN_No = goodsreceivenotedtl.GRN_No', 'INNER');
         $this->db->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode', 'INNER');
         $this->db->where('product.Prd_IsActive', 1);
-        
+
         if (isset($isall) && $isall == 'all') {
         }elseif (isset($isall) && $isall == '1') {
-            $this->db->where('productserialstock.Quantity', $isall);
+            $this->db->where('productimeistock.Quantity', $isall);
         }elseif (isset($isall) && $isall == '0') {
-            $this->db->where('productserialstock.Quantity', $isall);
+            $this->db->where('productimeistock.Quantity', $isall);
         }
-        
+
         if (isset($route) && $route != '' && count($route)>0) {
-            $this->db->where_in('productserialstock.Location', $route);
+            $this->db->where_in('productimeistock.Location', $route);
         }
         if (isset($product) && $product != '' && $isall == 0) {
             $this->db->where('product.ProductCode', $product);
@@ -1783,55 +2091,55 @@ class Report_model extends CI_Model {
         if (isset($dep) && $dep != '' ) {
             $this->db->where_in('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where_in('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
-        
+
         if (isset($sup) && $sup != '') {
             $this->db->where('product.Prd_Supplier', $sup);
         }
-        $this->db->group_by('productserialstock.SerialNo');
+        $this->db->group_by('productimeistock.EmiNo');
         $this->db->order_by('product.DepCode', 'ASC');
         $this->db->order_by('product.SubDepCode', 'ASC');
         $this->db->order_by('product.CategoryCode', 'ASC');
         $this->db->order_by('product.SubCategoryCode', 'ASC');
 //        $this->db->order_by('subcategory.Description', 'ASC');
-        
+
         $result=$this->db->get();
-        
-        
+
+
         $this->db->select('product.ProductCode,
                             product.Prd_Description,
-                            stocktransferdtl.CostPrice AS Prd_CostPrice,
+                            product.Prd_CostPrice AS Prd_CostPrice,
                             location.location,
-                            productserialstock.Quantity,
-                            productserialstock.SerialNo,
+                            productimeistock.Quantity,
+                            productimeistock.EmiNo,
                             supplier.SupName,
                             subdepartment.Description,
-                            stocktransferhed.TransDateORG As GRN_DateORG');
+                            materialrequestnotehed.MrnDateORG As GRN_DateORG');
         $this->db->from('product');
-        $this->db->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode', 'INNER');
+        $this->db->join('productimeistock', 'productimeistock.ProductCode = product.ProductCode', 'left');
         $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
-        $this->db->join('location', 'location.location_id = productserialstock.Location', 'INNER');
-        $this->db->join('stocktransferhed', 'stocktransferhed.TrnsNo = productserialstock.GrnNo', 'Left');
-        $this->db->join('stocktransferdtl', 'stocktransferhed.TrnsNo = stocktransferdtl.TrnsNo', 'INNER');
+        $this->db->join('location', 'location.location_id = productimeistock.Location', 'INNER');
+        $this->db->join('materialrequestnotehed', 'materialrequestnotehed.MrnNo = productimeistock.GrnNo', 'Left');
+        $this->db->join('materialrequestnotedtl', 'materialrequestnotehed.MrnNo = materialrequestnotedtl.MrnNo', 'INNER');
         $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'INNER');
         $this->db->where('product.Prd_IsActive', 1);
-        
+
         if (isset($isall) && $isall == 'all') {
         }elseif (isset($isall) && $isall == '1') {
-            $this->db->where('productserialstock.Quantity', $isall);
+            $this->db->where('productimeistock.Quantity', $isall);
         }elseif (isset($isall) && $isall == '0') {
-            $this->db->where('productserialstock.Quantity', $isall);
+            $this->db->where('productimeistock.Quantity', $isall);
         }
-        
+
         if (isset($route) && $route != '' && count($route)>0) {
-            $this->db->where_in('productserialstock.Location', $route);
+            $this->db->where_in('productimeistock.Location', $route);
         }
         if (isset($product) && $product != '' && $isall == 0) {
             $this->db->where('product.ProductCode', $product);
@@ -1839,38 +2147,173 @@ class Report_model extends CI_Model {
         if (isset($dep) && $dep != '' ) {
             $this->db->where_in('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where_in('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
-        
+
         if (isset($sup) && $sup != '') {
             $this->db->where('product.Prd_Supplier', $sup);
         }
-        $this->db->group_by('productserialstock.SerialNo');
+        $this->db->group_by('productimeistock.EmiNo');
         $this->db->order_by('product.DepCode', 'ASC');
         $this->db->order_by('product.SubDepCode', 'ASC');
         $this->db->order_by('product.CategoryCode', 'ASC');
         $this->db->order_by('product.SubCategoryCode', 'ASC');
 //        $this->db->order_by('subcategory.Description', 'ASC');
-        
+
         $result2=$this->db->get();
-        
+
         $list = array();
-        foreach ($result->result() as $row) {
-            $list[$row->Description][] = $row;
+        if (isset($transfer) && $transfer == 'transfer'){
+            foreach ($result2->result() as $row) {
+                $list[$row->Description][] = $row;
+            }
+        } else{
+            foreach ($result->result() as $row) {
+                $list[$row->Description][] = $row;
+            }
         }
-        foreach ($result2->result() as $row) {
-            $list[$row->Description][] = $row;
-        }
+
         return $list;
     }
-    
-    
+
+
+    public function loadserialiemisockreport($transfer,$route, $isall, $product = NULL,$dep,$subdep,$sup,$subcat) {
+
+        $this->db->select('product.ProductCode,
+                            product.Prd_Description,
+                            pricestock.UnitCost AS Prd_CostPrice,
+                            location.location,
+                            productserialemistock.Quantity,
+                            productserialemistock.SerialNo,
+                            productserialemistock.EmiNo,
+                            supplier.SupName,
+                            subdepartment.Description,
+                            goodsreceivenotehed.GRN_DateORG');
+        $this->db->from('product');
+        $this->db->join('pricestock', 'pricestock.PSCode  = product.ProductCode', 'Left');
+        $this->db->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode', 'Left');
+        $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
+        $this->db->join('location', 'location.location_id = productserialemistock.Location', 'INNER');
+        $this->db->join('goodsreceivenotehed', 'goodsreceivenotehed.GRN_No = productserialemistock.GrnNo', 'Left');
+        $this->db->join('goodsreceivenotedtl', 'goodsreceivenotehed.GRN_No = goodsreceivenotedtl.GRN_No', 'INNER');
+        $this->db->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode', 'INNER');
+        $this->db->where('product.Prd_IsActive', 1);
+
+        if (isset($isall) && $isall == 'all') {
+        }elseif (isset($isall) && $isall == '1') {
+            $this->db->where('productserialemistock.Quantity', $isall);
+        }elseif (isset($isall) && $isall == '0') {
+            $this->db->where('productserialemistock.Quantity', $isall);
+        }
+
+        if (isset($route) && $route != '' && count($route)>0) {
+            $this->db->where_in('productserialemistock.Location', $route);
+        }
+        if (isset($product) && $product != '' && $isall == 0) {
+            $this->db->where('product.ProductCode', $product);
+        }
+        if (isset($dep) && $dep != '' ) {
+            $this->db->where_in('product.DepCode', $dep);
+        }
+
+        if (isset($subdep) && $subdep != '' ) {
+            $this->db->where_in('product.SubDepCode', $subdep);
+        }
+
+        if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
+            $this->db->where_in('product.SubCategoryCode', $subcat);
+        }
+
+        if (isset($sup) && $sup != '') {
+            $this->db->where('product.Prd_Supplier', $sup);
+        }
+        $this->db->group_by('productserialemistock.SerialNo');
+        $this->db->order_by('product.DepCode', 'ASC');
+        $this->db->order_by('product.SubDepCode', 'ASC');
+        $this->db->order_by('product.CategoryCode', 'ASC');
+        $this->db->order_by('product.SubCategoryCode', 'ASC');
+//        $this->db->order_by('subcategory.Description', 'ASC');
+
+        $result=$this->db->get();
+
+
+        $this->db->select('product.ProductCode,
+                            product.Prd_Description,
+                            product.Prd_CostPrice AS Prd_CostPrice,
+                            location.location,
+                            productserialemistock.Quantity,
+                            productserialemistock.SerialNo,
+                            productserialemistock.EmiNo,
+                            supplier.SupName,
+                            subdepartment.Description,
+                            materialrequestnotehed.MrnDateORG As GRN_DateORG');
+        $this->db->from('product');
+        $this->db->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode', 'left');
+        $this->db->join('subdepartment', 'subdepartment.SubDepCode = product.SubDepCode', 'INNER');
+        $this->db->join('location', 'location.location_id = productserialemistock.Location', 'INNER');
+        $this->db->join('materialrequestnotehed', 'materialrequestnotehed.MrnNo = productserialemistock.GrnNo', 'Left');
+        $this->db->join('materialrequestnotedtl', 'materialrequestnotehed.MrnNo = materialrequestnotedtl.MrnNo', 'INNER');
+        $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'INNER');
+        $this->db->where('product.Prd_IsActive', 1);
+
+        if (isset($isall) && $isall == 'all') {
+        }elseif (isset($isall) && $isall == '1') {
+            $this->db->where('productserialemistock.Quantity', $isall);
+        }elseif (isset($isall) && $isall == '0') {
+            $this->db->where('productserialemistock.Quantity', $isall);
+        }
+
+        if (isset($route) && $route != '' && count($route)>0) {
+            $this->db->where_in('productserialemistock.Location', $route);
+        }
+        if (isset($product) && $product != '' && $isall == 0) {
+            $this->db->where('product.ProductCode', $product);
+        }
+        if (isset($dep) && $dep != '' ) {
+            $this->db->where_in('product.DepCode', $dep);
+        }
+
+        if (isset($subdep) && $subdep != '' ) {
+            $this->db->where_in('product.SubDepCode', $subdep);
+        }
+
+        if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
+            $this->db->where_in('product.SubCategoryCode', $subcat);
+        }
+
+        if (isset($sup) && $sup != '') {
+            $this->db->where('product.Prd_Supplier', $sup);
+        }
+        $this->db->group_by('productserialemistock.SerialNo');
+        $this->db->order_by('product.DepCode', 'ASC');
+        $this->db->order_by('product.SubDepCode', 'ASC');
+        $this->db->order_by('product.CategoryCode', 'ASC');
+        $this->db->order_by('product.SubCategoryCode', 'ASC');
+//        $this->db->order_by('subcategory.Description', 'ASC');
+
+        $result2=$this->db->get();
+
+        $list = array();
+        if (isset($transfer) && $transfer == 'transfer'){
+            foreach ($result2->result() as $row) {
+                $list[$row->Description][] = $row;
+            }
+        } else{
+            foreach ($result->result() as $row) {
+                $list[$row->Description][] = $row;
+            }
+        }
+
+        return $list;
+    }
+
+
     public function productdetailserial2($route, $isall, $product = NULL,$dep,$subdep,$sup,$subcat) {
         $this->db->select('product.ProductCode,
                             product.Prd_Description,
@@ -1889,14 +2332,14 @@ class Report_model extends CI_Model {
         $this->db->join('stocktransferdtl', 'stocktransferhed.TrnsNo = stocktransferdtl.TrnsNo', 'INNER');
         $this->db->join('supplier', 'supplier.SupCode = product.Prd_Supplier', 'INNER');
         $this->db->where('product.Prd_IsActive', 1);
-        
+
         if (isset($isall) && $isall == 'all') {
         }elseif (isset($isall) && $isall == '1') {
             $this->db->where('productserialstock.Quantity', $isall);
         }elseif (isset($isall) && $isall == '0') {
             $this->db->where('productserialstock.Quantity', $isall);
         }
-        
+
         if (isset($route) && $route != '' && count($route)>0) {
             $this->db->where_in('productserialstock.Location', $route);
         }
@@ -1906,15 +2349,15 @@ class Report_model extends CI_Model {
         if (isset($dep) && $dep != '' ) {
             $this->db->where_in('product.DepCode', $dep);
         }
-        
+
         if (isset($subdep) && $subdep != '' ) {
             $this->db->where_in('product.SubDepCode', $subdep);
         }
-        
+
         if ( isset($subcat) && $subcat != '' && count($subcat) != 0) {
             $this->db->where_in('product.SubCategoryCode', $subcat);
         }
-        
+
         if (isset($sup) && $sup != '') {
             $this->db->where('product.Prd_Supplier', $sup);
         }
@@ -1924,26 +2367,26 @@ class Report_model extends CI_Model {
         $this->db->order_by('product.CategoryCode', 'ASC');
         $this->db->order_by('product.SubCategoryCode', 'ASC');
 //        $this->db->order_by('subcategory.Description', 'ASC');
-        
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list[$row->Description][] = $row;
         }
         return $list;
     }
-    
+
     public function cashfloatbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL) {
 //        var_dump($startdate);die();
-            $this->db->select('*,users.first_name,cashinout.Remark As Remark');
-            $this->db->from('cashinout');
-            $this->db->join('transactiontypes', 'transactiontypes.TransactionCode = cashinout.TransCode', 'INNER');
-            $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
-            $this->db->where('DATE(InOutDate) <=', $enddate);
-            $this->db->where('DATE(InOutDate) >=', $startdate);
-            $this->db->where_in('cashinout.Location', $locationAr);
-            // $this->db->limit(50);
+        $this->db->select('*,users.first_name,cashinout.Remark As Remark');
+        $this->db->from('cashinout');
+        $this->db->join('transactiontypes', 'transactiontypes.TransactionCode = cashinout.TransCode', 'INNER');
+        $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
+        $this->db->where('DATE(InOutDate) <=', $enddate);
+        $this->db->where('DATE(InOutDate) >=', $startdate);
+        $this->db->where_in('cashinout.Location', $locationAr);
+        // $this->db->limit(50);
 
         $result=$this->db->get();
 
@@ -1957,25 +2400,24 @@ class Report_model extends CI_Model {
 //        return $this->db->get()->result();
     }
 
-    public function cashfloatbytype($startdate, $enddate, $location = NULL,$locationAr = NULL,$type,$emp) {
-        
+    public function cashfloatbytype($startdate, $enddate, $location = NULL,$locationAr = NULL,$type,$user_id) {
+
         $this->db->select('cashflot.*,transactiontypes.IsExpenses,users.first_name,cashflot.Remark As Remark');
         $this->db->from('cashflot');
         $this->db->join('transactiontypes', 'transactiontypes.TransactionCode = cashflot.TransactionCode', 'INNER');
         $this->db->join('users', 'users.id = cashflot.SystemUser', 'INNER');
+        $this->db->where('cashflot.SystemUser',$user_id);
         $this->db->where('DATE(DateORG) <=', $enddate);
         $this->db->where('DATE(DateORG) >=', $startdate);
         $this->db->where('cashflot.TransactionCode!=', $type);
-        if (isset($emp) && $emp != '') {
-            $this->db->where('Emp', $emp);
-        }
+      
         $this->db->where_in('cashflot.Location', $locationAr);
         // $this->db->limit(50);
         return $this->db->get()->result();
     }
 
     public function cashfloatsalarybytype($startdate, $enddate, $location = NULL,$locationAr = NULL,$type,$emp,$exp) {
-        
+
         $this->db->select('cashflot.*,users.first_name,cashflot.Remark As Remark');
         $this->db->from('cashflot');
         $this->db->join('transactiontypes', 'transactiontypes.TransactionCode = cashflot.TransactionCode', 'INNER');
@@ -1996,59 +2438,61 @@ class Report_model extends CI_Model {
         return $this->db->get()->result();
     }
 
-    public function totalsupplierpayment($startdate, $enddate, $location = NULL,$locationAr = NULL) {
-        
-        $this->db->select('CashPay,CardPay');
+    public function totalsupplierpayment($startdate, $enddate, $location = NULL,$locationAr = NULL,$user_id) {
+
+        $this->db->select('CashPay,CardPay,SystemUser');
         $this->db->from('supplierpaymenthed');
         $this->db->where('DATE(PayDate) =', $enddate);
+        $this->db->where('SystemUser',$user_id);
         if (isset($location) && $location != '') {
-           $this->db->where_in('supplierpaymenthed.Location', $locationAr);
+            $this->db->where_in('supplierpaymenthed.Location', $locationAr);
         }
-        
+
         return $this->db->get()->result();
     }
 
     public function totalmonthsupplierpayment($startdate, $enddate, $location = NULL,$locationAr = NULL) {
-        
+
         $this->db->select('CashPay,CardPay');
         $this->db->from('supplierpaymenthed');
         $this->db->where('DATE(PayDate) <=', $enddate);
         $this->db->where('DATE(PayDate) >=', $startdate);
         if (isset($location) && $location != '') {
-           $this->db->where_in('supplierpaymenthed.Location', $locationAr);
+            $this->db->where_in('supplierpaymenthed.Location', $locationAr);
         }
-        
+
         return $this->db->get()->result();
     }
 
     public function totalcuspayment($startdate, $enddate, $location = NULL,$locationAr = NULL,$type) {
-        
+
         $this->db->select('CashPay,CardPay');
         $this->db->from('customerpaymenthed');
         $this->db->where('DATE(PayDate) =', $enddate);
         $this->db->where('PaymentType', $type);
         $this->db->where('IsCancel', 0);
-        
+
         if (isset($location) && $location != '') {
-           $this->db->where_in('customerpaymenthed.Location', $locationAr);
+            $this->db->where_in('customerpaymenthed.Location', $locationAr);
         }
-        
+
         return $this->db->get()->result();
     }
 
-    public function totalcuspaymentsummary($startdate, $enddate, $location = NULL,$locationAr = NULL,$type) {
-        
-        $this->db->select('customerpaymenthed.*,customer.CusName');
+    public function totalcuspaymentsummary($startdate, $enddate, $location = NULL,$locationAr = NULL,$type,$user_id) {
+
+        $this->db->select('customerpaymenthed.*,customer.CusName,customerpaymenthed.SystemUser');
         $this->db->from('customerpaymenthed');
-         $this->db->join('customer', 'customer.CusCode = customerpaymenthed.CusCode', 'INNER');
+        $this->db->join('customer', 'customer.CusCode = customerpaymenthed.CusCode', 'INNER');
         $this->db->where('DATE(PayDate) =', $enddate);
+        $this->db->where('customerpaymenthed.SystemUser',$user_id);
         $this->db->where('PaymentType', $type);
         $this->db->where('IsCancel', 0);
-        
+
         if (isset($location) && $location != '') {
-           $this->db->where_in('customerpaymenthed.Location', $locationAr);
+            $this->db->where_in('customerpaymenthed.Location', $locationAr);
         }
-        
+
         return $this->db->get()->result();
     }
 
@@ -2067,13 +2511,14 @@ class Report_model extends CI_Model {
         return $this->db->get()->result();
     }
 
-    public function totalcusodercuspaymentsummary($startdate, $enddate, $location = NULL,$locationAr = NULL,$type)
+    public function totalcusodercuspaymentsummary($startdate, $enddate, $location = NULL,$locationAr = NULL,$type,$user_id)
     {
-        $this->db->select('customerorderpayment.*,customer.CusName,customerorderhed.PO_No,customerorderhed.SupCode');
+        $this->db->select('customerorderpayment.*,customer.CusName,customerorderhed.PO_No,customerorderhed.SupCode,customerorderhed.PO_User');
         $this->db->from('customerorderpayment');
         $this->db->join('customerorderhed', 'customerorderhed.PO_No = customerorderpayment.OrderNo', 'INNER');
         $this->db->join('customer', 'customer.CusCode = customerorderhed.SupCode', 'INNER');
         $this->db->where('DATE(PayDate) =', $enddate);
+        $this->db->where('customerorderhed.PO_User');
         $this->db->where('IsCancel', 0);
 
 //        if (isset($location) && $location != '') {
@@ -2084,103 +2529,105 @@ class Report_model extends CI_Model {
     }
 
     public function totalcusmonthpaymentsummary($startdate, $enddate, $location = NULL,$locationAr = NULL,$type) {
-        
+
         $this->db->select('customerpaymenthed.*,customer.CusName');
         $this->db->from('customerpaymenthed');
-         $this->db->join('customer', 'customer.CusCode = customerpaymenthed.CusCode', 'INNER');
+        $this->db->join('customer', 'customer.CusCode = customerpaymenthed.CusCode', 'INNER');
         $this->db->where('DATE(PayDate) <=', $enddate);
         $this->db->where('DATE(PayDate) >=', $startdate);
         $this->db->where('PaymentType', $type);
         $this->db->where('IsCancel', 0);
-        
+
         if (isset($location) && $location != '') {
-           $this->db->where_in('customerpaymenthed.Location', $locationAr);
+            $this->db->where_in('customerpaymenthed.Location', $locationAr);
         }
-        
+
         return $this->db->get()->result();
     }
 
 
-    
+
     public function cashinoutbyroute($startdate, $enddate, $location = NULL,$locationAr = NULL,$emp,$type) {
-        
-            $this->db->select('cashinout.*,users.first_name');
-            $this->db->from('cashinout');
-            $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
-            $this->db->where('DATE(InOutDate) <=', $enddate);
-            $this->db->where('DATE(InOutDate) >=', $startdate);
-            $this->db->where_in('cashinout.Location', $locationAr);
-            if (isset($emp) && $emp != '') {
-               $this->db->where('cashinout.Emp', $emp);
-            }
 
-            if (isset($type) && $type != '') {
-               $this->db->where('cashinout.TransCode', $type);
-            }
-            // $this->db->limit(50);
-        
+        $this->db->select('cashinout.*,users.first_name');
+        $this->db->from('cashinout');
+        $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
+        $this->db->where('DATE(InOutDate) <=', $enddate);
+        $this->db->where('DATE(InOutDate) >=', $startdate);
+        $this->db->where_in('cashinout.Location', $locationAr);
+        if (isset($emp) && $emp != '') {
+            $this->db->where('cashinout.Emp', $emp);
+        }
+
+        if (isset($type) && $type != '') {
+            $this->db->where('cashinout.TransCode', $type);
+        }
+        // $this->db->limit(50);
+
         return $this->db->get()->result();
     }
 
-    public function cashinoutsalarybytype($startdate, $enddate, $location = NULL,$locationAr = NULL, $type) {
-        
-            $this->db->select('cashinout.*,users.first_name');
-            $this->db->from('cashinout');
-            $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
-            $this->db->where('DATE(InOutDate) =', $enddate);
-            // $this->db->where('DATE(InOutDate) >=', $startdate);
-            // $this->db->where('Emp!=', 0);
-            $this->db->where('TransCode', $type);
-            $this->db->where('Mode=', 'Out');
-            $this->db->where_in('cashinout.Location', $locationAr);
-            // $this->db->limit(50);
-        
+   public function cashinoutsalarybytype($startdate, $enddate, $location = NULL,$locationAr = NULL, $type,$user_id) {
+
+        $this->db->select('cashinout.*,users.first_name');
+        $this->db->from('cashinout');
+        $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
+        $this->db->where('DATE(InOutDate) =', $enddate);
+        $this->db->where('cashinout.SystemUser',$user_id);
+        // $this->db->where('DATE(InOutDate) >=', $startdate);
+        // $this->db->where('Emp!=', 0);
+        $this->db->where('TransCode', $type);
+        $this->db->where('Mode=', 'Out');
+        $this->db->where_in('cashinout.Location', $locationAr);
+        // $this->db->limit(50);
+
         return $this->db->get()->result();
     }
 
     public function cashinoutmonthsalarybytype($startdate, $enddate, $location = NULL,$locationAr = NULL, $type) {
-        
-            $this->db->select('cashinout.*,users.first_name');
-            $this->db->from('cashinout');
-            $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
-            $this->db->where('DATE(InOutDate) <=', $enddate);
-            $this->db->where('DATE(InOutDate) >=', $startdate);
-            // $this->db->where('Emp!=', 0);
-            $this->db->where('TransCode', $type);
-            $this->db->where('Mode=', 'Out');
-            $this->db->where_in('cashinout.Location', $locationAr);
-            // $this->db->limit(50);
-        
+
+        $this->db->select('cashinout.*,users.first_name');
+        $this->db->from('cashinout');
+        $this->db->join('users', 'users.id = cashinout.SystemUser', 'INNER');
+        $this->db->where('DATE(InOutDate) <=', $enddate);
+        $this->db->where('DATE(InOutDate) >=', $startdate);
+        // $this->db->where('Emp!=', 0);
+        $this->db->where('TransCode', $type);
+        $this->db->where('Mode=', 'Out');
+        $this->db->where_in('cashinout.Location', $locationAr);
+        // $this->db->limit(50);
+
         return $this->db->get()->result();
     }
 
-    public function cashinoutbyroutebytype($startdate, $enddate, $location = NULL,$locationAr = NULL, $type) {
-        
-            $this->db->select('cashinout.*,users.first_name,transactiontypes.TransactionName,salespersons.RepName');
-            $this->db->from('cashinout');
-            $this->db->join('users', 'users.id = cashinout.SystemUser', 'left');
-            $this->db->join('salespersons','cashinout.Emp=salespersons.RepID','left');
-            $this->db->join('transactiontypes','cashinout.TransCode=transactiontypes.TransactionCode','left');
-            $this->db->where('DATE(InOutDate) =', $enddate);
-            // $this->db->where('DATE(InOutDate) >=', $startdate);
-            $this->db->where('TransCode!=', $type);
-            $this->db->where_in('cashinout.Location', $locationAr);
-            // $this->db->limit(50);
+    public function cashinoutbyroutebytype($startdate, $enddate, $location = NULL,$locationAr = NULL, $type,$user_id) {
+
+        $this->db->select('cashinout.*,users.first_name,transactiontypes.TransactionName,salespersons.RepName');
+        $this->db->from('cashinout');
+        $this->db->join('users', 'users.id = cashinout.SystemUser', 'left');
+        $this->db->join('salespersons','cashinout.Emp=salespersons.RepID','left');
+        $this->db->join('transactiontypes','cashinout.TransCode=transactiontypes.TransactionCode','left');
+        $this->db->where('DATE(InOutDate) =', $enddate);
+        $this->db->where('cashinout.SystemUser',$user_id);
+        // $this->db->where('DATE(InOutDate) >=', $startdate);
+        $this->db->where('TransCode!=', $type);
+        $this->db->where_in('cashinout.Location', $locationAr);
+        // $this->db->limit(50);
         return $this->db->get()->result();
     }
 
     public function cashinoutmonthbyroutebytype($startdate, $enddate, $location = NULL,$locationAr = NULL, $type) {
-        
-            $this->db->select('cashinout.*,users.first_name,transactiontypes.TransactionName,salespersons.RepName');
-            $this->db->from('cashinout');
-            $this->db->join('users', 'users.id = cashinout.SystemUser', 'left');
-            $this->db->join('salespersons','cashinout.Emp=salespersons.RepID','left');
-            $this->db->join('transactiontypes','cashinout.TransCode=transactiontypes.TransactionCode','left');
-            $this->db->where('DATE(InOutDate) <=', $enddate);
-            $this->db->where('DATE(InOutDate) >=', $startdate);
-            $this->db->where('TransCode!=', $type);
-            $this->db->where_in('cashinout.Location', $locationAr);
-            // $this->db->limit(50);
+
+        $this->db->select('cashinout.*,users.first_name,transactiontypes.TransactionName,salespersons.RepName');
+        $this->db->from('cashinout');
+        $this->db->join('users', 'users.id = cashinout.SystemUser', 'left');
+        $this->db->join('salespersons','cashinout.Emp=salespersons.RepID','left');
+        $this->db->join('transactiontypes','cashinout.TransCode=transactiontypes.TransactionCode','left');
+        $this->db->where('DATE(InOutDate) <=', $enddate);
+        $this->db->where('DATE(InOutDate) >=', $startdate);
+        $this->db->where('TransCode!=', $type);
+        $this->db->where_in('cashinout.Location', $locationAr);
+        // $this->db->limit(50);
         return $this->db->get()->result();
     }
 
@@ -2188,25 +2635,25 @@ class Report_model extends CI_Model {
         $query = $this->db->query("CALL SPR_STOCK_FINAL_V2('$startdate','$enddate','$route','$product','$dep','$subdep','$subcat')");
         $result = array();
         foreach ($query->result() as $rows) {
-        $result[$rows->CategoryName][] = $rows;
+            $result[$rows->CategoryName][] = $rows;
         }
         return $result;
     }
-    
-     public function productdailyfinalstock2($startdate, $enddate, $route, $product = NULL) {
+
+    public function productdailyfinalstock2($startdate, $enddate, $route, $product = NULL) {
         $query = $this->db->query("CALL SPR_STOCK_FINAL('$startdate','$enddate','$route','$product')");
 //        $result = array();
-        $data = array(); 
-while($row = $query->result()) { 
-  $data[$row['country']][$row['city']] = $row['venue']; 
-} 
-foreach($row as $country => $cities) { 
-  echo "<h1>$country</h1>\n"; 
-  foreach($cities as $city => $venues) { 
-    echo "<h2>$city</h2>\n"; 
-    
-  } 
-}  
+        $data = array();
+        while($row = $query->result()) {
+            $data[$row['country']][$row['city']] = $row['venue'];
+        }
+        foreach($row as $country => $cities) {
+            echo "<h1>$country</h1>\n";
+            foreach($cities as $city => $venues) {
+                echo "<h2>$city</h2>\n";
+
+            }
+        }
 //        foreach ($query->result() as $rows) {
 //            $result[] = $rows;
 //        }
@@ -2215,7 +2662,7 @@ foreach($row as $country => $cities) {
 
     public function laststockreportdate() {
         if (isset($this->db->select_max('StockDate')->from('stockdate')->get()->row()->StockDate) &&
-                $this->db->select_max('StockDate')->from('stockdate')->get()->row()->StockDate != '') {
+            $this->db->select_max('StockDate')->from('stockdate')->get()->row()->StockDate != '') {
             return $this->db->select_max('StockDate')->from('stockdate')->get()->row()->StockDate;
         } else {
             return date("Y-m-d");
@@ -2237,7 +2684,7 @@ foreach($row as $country => $cities) {
     }
 
     public function suppliercredit($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
+
         $this->db->select('creditgrndetails.SupCode,
                     DATE(creditgrndetails.GRNDate) AS InvoiceDate,
                     creditgrndetails.GRNNo,
@@ -2258,10 +2705,10 @@ foreach($row as $country => $cities) {
         $this->db->where('creditgrndetails.IsCancel',0);
         if (isset($isall) && $isall == 0 ) {
             if (isset($enddate) && $enddate != '' ) {
-            $this->db->where('DATE(creditgrndetails.GRNDate) <=', $enddate);
+                $this->db->where('DATE(creditgrndetails.GRNDate) <=', $enddate);
             }
             if (isset($startdate) && $startdate != '' ) {
-            $this->db->where('DATE(creditgrndetails.GRNDate) >=', $startdate);
+                $this->db->where('DATE(creditgrndetails.GRNDate) >=', $startdate);
             }
         }
         if (isset($route) && $route != '' ) {
@@ -2281,8 +2728,8 @@ foreach($row as $country => $cities) {
     }
 
     public function customercredit($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('customer.MobileNo,creditinvoicedetails.CusCode,
+
+        $this->db->select('customer.MobileNo,creditinvoicedetails.CusCode,
                             DATE(creditinvoicedetails.InvoiceDate) AS InvoiceDate,
                             creditinvoicedetails.InvoiceNo,
                             creditinvoicedetails.NetAmount,
@@ -2296,36 +2743,36 @@ foreach($row as $country => $cities) {
                             customer.Address02,
                             jobinvoicehed.JobCardNo,
                             jobinvoicehed.JRegNo');
-                $this->db->from('creditinvoicedetails');
-                $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
-                $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
-                $this->db->join('salespersons','salespersons.RepID = customer.HandelBy','left');
-                // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
-                 $this->db->where('creditinvoicedetails.IsCancel',0);
-            if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        $this->db->from('creditinvoicedetails');
+        $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
+        $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
+        $this->db->join('salespersons','salespersons.RepID = customer.HandelBy','left');
+        // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
+        $this->db->where('creditinvoicedetails.IsCancel',0);
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(creditinvoicedetails.InvoiceDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                $this->db->where('DATE(creditinvoicedetails.InvoiceDate) >=', $startdate);
-                }
             }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('creditinvoicedetails.Location',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('creditinvoicedetails.CusCode',$customer);
-                  }
-                 // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount');
-                  $this->db->group_by('creditinvoicedetails.InvoiceDate');
-                  $this->db->order_by('creditinvoicedetails.InvoiceDate');
-                   
-              return $this->db->get()->result();
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(creditinvoicedetails.InvoiceDate) >=', $startdate);
+            }
+        }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('creditinvoicedetails.Location',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('creditinvoicedetails.CusCode',$customer);
+        }
+        // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount');
+        $this->db->group_by('creditinvoicedetails.InvoiceDate');
+        $this->db->order_by('creditinvoicedetails.InvoiceDate');
+
+        return $this->db->get()->result();
     }
 
     public function customercreditstatement($startdate, $enddate, $loc = NULL,$isall,$customer) {
-        
-            $this->db->select('customer.MobileNo,creditinvoicedetails.CusCode,
+
+        $this->db->select('customer.MobileNo,creditinvoicedetails.CusCode,
                             DATE(creditinvoicedetails.InvoiceDate) AS InvoiceDate,
                             creditinvoicedetails.InvoiceNo,
                             creditinvoicedetails.NetAmount,
@@ -2339,35 +2786,35 @@ foreach($row as $country => $cities) {
                             customer.Address02,
                             jobinvoicehed.JobCardNo,
                             jobinvoicehed.JRegNo');
-                $this->db->from('creditinvoicedetails');
-                $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
-                $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
-                // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
-                 $this->db->where('creditinvoicedetails.IsCancel',0);
-            if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        $this->db->from('creditinvoicedetails');
+        $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
+        $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
+        // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
+        $this->db->where('creditinvoicedetails.IsCancel',0);
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(creditinvoicedetails.InvoiceDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                $this->db->where('DATE(creditinvoicedetails.InvoiceDate) >=', $startdate);
-                }
             }
-                 if (isset($loc) && $loc != '' ) {
-                // $this->db->where('creditinvoicedetails.Location',$loc);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('creditinvoicedetails.CusCode',$customer);
-                  }
-                 // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount');
-                  $this->db->group_by('creditinvoicedetails.InvoiceNo');
-                  $this->db->order_by('creditinvoicedetails.InvoiceDate');
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(creditinvoicedetails.InvoiceDate) >=', $startdate);
+            }
+        }
+        if (isset($loc) && $loc != '' ) {
+            // $this->db->where('creditinvoicedetails.Location',$loc);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('creditinvoicedetails.CusCode',$customer);
+        }
+        // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount');
+        $this->db->group_by('creditinvoicedetails.InvoiceNo');
+        $this->db->order_by('creditinvoicedetails.InvoiceDate');
 
-              return $this->db->get()->result();
+        return $this->db->get()->result();
     }
 
     public function customerpayment($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('customerpaymenthed.CusPayNo,
+
+        $this->db->select('customerpaymenthed.CusPayNo,
                             customerpaymenthed.CusCode,
                             customerpaymenthed.TotalPayment,
                             customerpaymentdtl.`Mode`,
@@ -2383,32 +2830,32 @@ foreach($row as $country => $cities) {
                             customer.Address01,
                             customer.Address02,
                             bank.BankName');
-                $this->db->from('customerpaymenthed');
-                $this->db->join('customerpaymentdtl','customerpaymentdtl.CusPayNo=customerpaymenthed.CusPayNo');
-                $this->db->join('customer','customerpaymenthed.CusCode = customer.CusCode');
-                $this->db->join('bank','customerpaymentdtl.BankNo = bank.BankCode','left');
-                 $this->db->where('customerpaymenthed.IsCancel',0);
-            if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        $this->db->from('customerpaymenthed');
+        $this->db->join('customerpaymentdtl','customerpaymentdtl.CusPayNo=customerpaymenthed.CusPayNo');
+        $this->db->join('customer','customerpaymenthed.CusCode = customer.CusCode');
+        $this->db->join('bank','customerpaymentdtl.BankNo = bank.BankCode','left');
+        $this->db->where('customerpaymenthed.IsCancel',0);
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(customerpaymenthed.PayDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                $this->db->where('DATE(customerpaymenthed.PayDate) >=', $startdate);
-                }
             }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('customerpaymenthed.Location',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('customerpaymenthed.CusCode',$customer);
-                  }
-                   
-              return $this->db->get()->result();
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(customerpaymenthed.PayDate) >=', $startdate);
+            }
+        }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('customerpaymenthed.Location',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('customerpaymenthed.CusCode',$customer);
+        }
+
+        return $this->db->get()->result();
     }
 
     public function customercreditbyvehicle($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('creditinvoicedetails.CusCode,
+
+        $this->db->select('creditinvoicedetails.CusCode,
                             DATE(creditinvoicedetails.InvoiceDate) AS InvoiceDate,
                             creditinvoicedetails.InvoiceNo,
                             creditinvoicedetails.NetAmount,
@@ -2420,32 +2867,32 @@ foreach($row as $country => $cities) {
                             customer.Address02,
                             jobinvoicehed.JobCardNo,
                             jobinvoicehed.JRegNo');
-                $this->db->from('creditinvoicedetails');
-                $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
-                $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
-                $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
-                 $this->db->where('creditinvoicedetails.IsCancel',0);
-            if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        $this->db->from('creditinvoicedetails');
+        $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
+        $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
+        $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
+        $this->db->where('creditinvoicedetails.IsCancel',0);
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(creditinvoicedetails.InvoiceDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                $this->db->where('DATE(creditinvoicedetails.InvoiceDate) >=', $startdate);
-                }
             }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('creditinvoicedetails.Location',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('creditinvoicedetails.CusCode',$customer);
-                  }
-                   
-              return $this->db->get()->result();
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(creditinvoicedetails.InvoiceDate) >=', $startdate);
+            }
+        }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('creditinvoicedetails.Location',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('creditinvoicedetails.CusCode',$customer);
+        }
+
+        return $this->db->get()->result();
     }
 
     public function customerpaymentbyvehicle($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('customerpaymenthed.CusPayNo,
+
+        $this->db->select('customerpaymenthed.CusPayNo,
                             customerpaymenthed.CusCode,
                             customerpaymenthed.TotalPayment,
                             customerpaymentdtl.`Mode`,
@@ -2461,32 +2908,32 @@ foreach($row as $country => $cities) {
                             customer.Address01,
                             customer.Address02,
                             bank.BankName');
-                $this->db->from('customerpaymenthed');
-                $this->db->join('customerpaymentdtl','customerpaymentdtl.CusPayNo=customerpaymenthed.CusPayNo');
-                $this->db->join('customer','customerpaymenthed.CusCode = customer.CusCode');
-                $this->db->join('bank','customerpaymentdtl.BankNo = bank.BankCode','left');
-                 $this->db->where('customerpaymenthed.IsCancel',0);
-            if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        $this->db->from('customerpaymenthed');
+        $this->db->join('customerpaymentdtl','customerpaymentdtl.CusPayNo=customerpaymenthed.CusPayNo');
+        $this->db->join('customer','customerpaymenthed.CusCode = customer.CusCode');
+        $this->db->join('bank','customerpaymentdtl.BankNo = bank.BankCode','left');
+        $this->db->where('customerpaymenthed.IsCancel',0);
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(customerpaymenthed.PayDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                $this->db->where('DATE(customerpaymenthed.PayDate) >=', $startdate);
-                }
             }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('customerpaymenthed.Location',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('customerpaymenthed.CusCode',$customer);
-                  }
-                   
-              return $this->db->get()->result();
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(customerpaymenthed.PayDate) >=', $startdate);
+            }
+        }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('customerpaymenthed.Location',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('customerpaymenthed.CusCode',$customer);
+        }
+
+        return $this->db->get()->result();
     }
 
     public function invoicesbyvehicle($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('JobCode,
+
+        $this->db->select('JobCode,
                            jobinvoicehed.JobInvNo,
                            DATE(jobinvoicehed.JobInvoiceDate) AS JobInvoiceDate,
                            JobDescription AS AppearName,
@@ -2510,13 +2957,13 @@ foreach($row as $country => $cities) {
         $this->db->join('customer', 'customer.CusCode = jobinvoicehed.JCustomer', 'INNER');
 
         if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
-               $this->db->where('DATE(jobinvoicehed.JobInvoiceDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                 $this->db->where('DATE(jobinvoicehed.JobInvoiceDate) >=', $startdate);
-                }
+            if (isset($enddate) && $enddate != '' ) {
+                $this->db->where('DATE(jobinvoicehed.JobInvoiceDate) <=', $enddate);
             }
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(jobinvoicehed.JobInvoiceDate) >=', $startdate);
+            }
+        }
 
         $this->db->where('jobinvoicehed.IsCancel', 0);
         if (isset($route) && $route != '') {
@@ -2525,15 +2972,15 @@ foreach($row as $country => $cities) {
         if (isset($customer) && $customer != '') {
             $this->db->where('jobinvoicehed.JRegNo', $customer);
         }
-        
+
         $this->db->order_by('jobinvoicehed.JobInvNo');
         $this->db->order_by('jobinvoicehed.JobInvoiceDate');
         $this->db->order_by('jobtype.jobtype_order', 'ASC');
         // $this->db->limit(50);
-        
-        
+
+
         $result=$this->db->get();
-        
+
         $list = array();
         foreach ($result->result() as $row) {
             $list["Invoice No: ".$row->JobInvNo." &nbsp; | &nbsp; Job Card No: ".$row->JobCardNo." &nbsp;| &nbsp;Customer : ".$row->CusName][] = $row;
@@ -2542,43 +2989,43 @@ foreach($row as $country => $cities) {
     }
 
     public function jobdelivery($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('
+
+        $this->db->select('
                             customer.CusName,
                             customer.RespectSign,
                             customer.Address01,
                             customer.Address02,
                             jobcardhed.JobCardNo,
                             jobcardhed.JRegNo,deliveryDate,appoimnetDate,status_name');
-                $this->db->from('jobcardhed');
-                $this->db->join('customer','jobcardhed.JCustomer = customer.CusCode');
-                $this->db->join('job_status','job_status.status_id = jobcardhed.IsCompelte');
-                $this->db->where('DATE(jobcardhed.deliveryDate) <',$enddate);
-                 $this->db->where('jobcardhed.IsCancel',0);
-            // if (isset($isall) && $isall == 0 ) {
-            //     if (isset($enddate) && $enddate != '' ) {
-            //     $this->db->where('DATE(jobcardhed.appoimnetDate) <=', $enddate);
-            //     }
-            //     if (isset($startdate) && $startdate != '' ) {
-            //     $this->db->where('DATE(jobcardhed.appoimnetDate) >=', $startdate);
-            //     }
-            // }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('jobcardhed.JLocation',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('jobcardhed.JCustomer',$customer);
-                  }
-                   
-              return $this->db->get()->result();
+        $this->db->from('jobcardhed');
+        $this->db->join('customer','jobcardhed.JCustomer = customer.CusCode');
+        $this->db->join('job_status','job_status.status_id = jobcardhed.IsCompelte');
+        $this->db->where('DATE(jobcardhed.deliveryDate) <',$enddate);
+        $this->db->where('jobcardhed.IsCancel',0);
+        // if (isset($isall) && $isall == 0 ) {
+        //     if (isset($enddate) && $enddate != '' ) {
+        //     $this->db->where('DATE(jobcardhed.appoimnetDate) <=', $enddate);
+        //     }
+        //     if (isset($startdate) && $startdate != '' ) {
+        //     $this->db->where('DATE(jobcardhed.appoimnetDate) >=', $startdate);
+        //     }
+        // }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('jobcardhed.JLocation',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('jobcardhed.JCustomer',$customer);
+        }
+
+        return $this->db->get()->result();
     }
 
 
     ///////////////////////////////////////////////////////////////////////////////////////
 
     public function customercreditsummary($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('customer.MobileNo,creditinvoicedetails.CusCode,
+
+        $this->db->select('customer.MobileNo,creditinvoicedetails.CusCode,
                             DATE(creditinvoicedetails.InvoiceDate) AS InvoiceDate,
                             creditinvoicedetails.InvoiceNo,
                             SUM(creditinvoicedetails.NetAmount) AS NetAmount,
@@ -2592,37 +3039,37 @@ foreach($row as $country => $cities) {
                             jobinvoicehed.JobCardNo,
                             jobinvoicehed.JRegNo,
                             salespersons.RepName');
-                $this->db->from('creditinvoicedetails');
-                $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
-                $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
-                $this->db->join('salespersons','salespersons.RepID=customer.HandelBy','left');
-                // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
-                 $this->db->where('creditinvoicedetails.IsCancel',0);
+        $this->db->from('creditinvoicedetails');
+        $this->db->join('jobinvoicehed','creditinvoicedetails.InvoiceNo=jobinvoicehed.JobInvNo','left');
+        $this->db->join('customer','creditinvoicedetails.CusCode = customer.CusCode');
+        $this->db->join('salespersons','salespersons.RepID=customer.HandelBy','left');
+        // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
+        $this->db->where('creditinvoicedetails.IsCancel',0);
 //                 $this->db->where('creditinvoicedetails.Type!=',2);
-                if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(creditinvoicedetails.InvoiceDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
+            }
+            if (isset($startdate) && $startdate != '' ) {
                 $this->db->where('DATE(creditinvoicedetails.InvoiceDate) >=', $startdate);
-                }
-                }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('creditinvoicedetails.Location',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('creditinvoicedetails.CusCode',$customer);
-                  } 
+            }
+        }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('creditinvoicedetails.Location',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('creditinvoicedetails.CusCode',$customer);
+        }
 //                $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount');
-                $this->db->group_by('creditinvoicedetails.CusCode');
-                $this->db->order_by('customer.CusName', 'ASC');
-                
-              return $this->db->get()->result();
+        $this->db->group_by('creditinvoicedetails.CusCode');
+        $this->db->order_by('customer.CusName', 'ASC');
+
+        return $this->db->get()->result();
     }
 
     public function customerjobcommission($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('customer.MobileNo,
+
+        $this->db->select('customer.MobileNo,
                             DATE(jobinvoicehed.JobInvoiceDate) AS InvoiceDate,
                             customer.CusName,
                             customer.RespectSign,
@@ -2630,33 +3077,33 @@ foreach($row as $country => $cities) {
                             customer.Address02,
                             jobinvoicehed.JobInvNo AS InvoiceNo,
                             jobinvoicehed.JobCommsion  AS commission');
-                $this->db->from('jobinvoicehed');
-                $this->db->join('customer','jobinvoicehed.JobComCus = customer.CusCode');
-                // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
-                 $this->db->where('jobinvoicehed.IsCancel',0);
-            if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        $this->db->from('jobinvoicehed');
+        $this->db->join('customer','jobinvoicehed.JobComCus = customer.CusCode');
+        // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
+        $this->db->where('jobinvoicehed.IsCancel',0);
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(jobinvoicehed.JobInvoiceDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                $this->db->where('DATE(jobinvoicehed.JobInvoiceDate) >=', $startdate);
-                }
             }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('jobinvoicehed.JobLocation',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('jobinvoicehed.JobComCus',$customer);
-                  }
-                 // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount'); 
-                  $this->db->order_by('jobinvoicehed.JobInvoiceDate');
-                   
-              return $this->db->get()->result();
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(jobinvoicehed.JobInvoiceDate) >=', $startdate);
+            }
+        }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('jobinvoicehed.JobLocation',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('jobinvoicehed.JobComCus',$customer);
+        }
+        // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount');
+        $this->db->order_by('jobinvoicehed.JobInvoiceDate');
+
+        return $this->db->get()->result();
     }
 
     public function customersalecommission($startdate, $enddate, $route = NULL,$isall,$customer) {
-        
-            $this->db->select('customer.MobileNo,
+
+        $this->db->select('customer.MobileNo,
                             DATE(salesinvoicehed.SalesDate) AS InvoiceDate,
                             customer.CusName,
                             customer.RespectSign,
@@ -2664,28 +3111,28 @@ foreach($row as $country => $cities) {
                             customer.Address02,
                             salesinvoicehed.SalesInvNo AS InvoiceNo,
                             salesinvoicehed.SalesCommsion AS commission');
-                $this->db->from('salesinvoicehed');
-                $this->db->join('customer','salesinvoicehed.SalesComCus = customer.CusCode');
-                // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
-                 $this->db->where('salesinvoicehed.InvIsCancel',0);
-            if (isset($isall) && $isall == 0 ) {
-                if (isset($enddate) && $enddate != '' ) {
+        $this->db->from('salesinvoicehed');
+        $this->db->join('customer','salesinvoicehed.SalesComCus = customer.CusCode');
+        // $this->db->where('creditinvoicedetails.CreditAmount > creditinvoicedetails.SettledAmount');
+        $this->db->where('salesinvoicehed.InvIsCancel',0);
+        if (isset($isall) && $isall == 0 ) {
+            if (isset($enddate) && $enddate != '' ) {
                 $this->db->where('DATE(salesinvoicehed.SalesDate) <=', $enddate);
-                }
-                if (isset($startdate) && $startdate != '' ) {
-                $this->db->where('DATE(salesinvoicehed.SalesDate) >=', $startdate);
-                }
             }
-                 if (isset($route) && $route != '' ) {
-                $this->db->where('salesinvoicehed.SalesLocation',$route);
-                 }
-                  if (isset($customer) && $customer != '' ) {
-                $this->db->where('salesinvoicehed.SalesComCus',$customer);
-                  }
-                 // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount'); 
-                  $this->db->order_by('salesinvoicehed.SalesDate');
-                   
-              return $this->db->get()->result();
+            if (isset($startdate) && $startdate != '' ) {
+                $this->db->where('DATE(salesinvoicehed.SalesDate) >=', $startdate);
+            }
+        }
+        if (isset($route) && $route != '' ) {
+            $this->db->where('salesinvoicehed.SalesLocation',$route);
+        }
+        if (isset($customer) && $customer != '' ) {
+            $this->db->where('salesinvoicehed.SalesComCus',$customer);
+        }
+        // $this->db->where('creditinvoicedetails.CreditAmount !=creditinvoicedetails.SettledAmount');
+        $this->db->order_by('salesinvoicehed.SalesDate');
+
+        return $this->db->get()->result();
     }
 
     public function gencashreportbyeasydaterangesummary($startdate, $enddate, $location = NULL, $locationAr = NULL) {
@@ -2764,7 +3211,7 @@ foreach($row as $country => $cities) {
 
         return $this->db->get()->result();
     }
-    
+
     public function monthlyreportbydate($startdate, $enddate, $location = NULL, $locationAr = NULL) {
         $this->db->select('SUM(salesinvoicehed.SalesCashAmount) AS SalesCashAmount,
         SUM(salesinvoicehed.SalesChequeAmount) AS SalesChequeAmount,
@@ -2874,7 +3321,7 @@ foreach($row as $country => $cities) {
 
         return $this->db->get()->result();
     }
-    
+
     public function totaleasycuspaymentsummarybydate($startdate, $enddate, $location = NULL,$locationAr = NULL,$type) {
 
         $this->db->select('invoice_hed.*,customer.CusName,customer.CusCode,customer.RespectSign,customer.ContactNo');
@@ -2913,5 +3360,90 @@ foreach($row as $country => $cities) {
 //        $this->db->get();
 //        echo  $this->db->last_query(); die();
         return $this->db->get()->result();
+    }
+
+    public function genIssuenoteByDate($startdate, $enddate, $location = NULL,$locationAr = NULL,$invtype,$salesperson= NULL) {
+        if (isset($location) && $location != '') {
+            $this->db->select('issuenote_hed.SalesPONumber,customer.MobileNo,customer.CusCode,DATE(issuenote_hed.SalesDate) As InvDate,(issuenote_hed.SalesDisAmount) AS DisAmount,issuenote_hed.SalesInvNo,
+                                (issuenote_hed.SalesCashAmount) AS CashAmount,                          
+                                (issuenote_hed.SalesInvAmount) AS InvAmount,
+                                (issuenote_hed.SalesVatAmount) AS VatAmount,
+                                (issuenote_hed.SalesNbtAmount) AS NbtAmount,
+                                (issuenote_hed.SalesNetAmount) AS NetAmount,customer.CusName,
+                                customer.RespectSign');
+            $this->db->from('issuenote_hed');
+            $this->db->join('customer', 'customer.CusCode = salesinvoicehed.SalesCustomer', 'INNER');
+            $this->db->where('DATE(issuenote_hed.SalesDate) <=', $enddate);
+            $this->db->where('DATE(issuenote_hed.SalesDate) >=', $startdate);
+            $this->db->where_in('issuenote_hed.SalesLocation', $locationAr);
+            $this->db->where('issuenote_hed.InvIsCancel', 0);
+            if (isset($invtype) && $invtype != '') {
+                $this->db->where('issuenote_hed.SalesInvType', $invtype);
+            }
+
+            if (isset($salesperson) && $salesperson != '') {
+                $this->db->where('issuenote_hed.SalesPerson', $salesperson);
+            }
+
+            // $this->db->group_by('DATE(SalesInvNo)');
+            $this->db->order_by('issuenote_hed.SalesDate', 'DESC');
+            // $this->db->limit(50);
+        } else {
+            $this->db->select('issuenote_hed.SalesPONumber,customer.MobileNo,customer.CusCode,DATE(issuenote_hed.SalesDate) As InvDate,(issuenote_hed.SalesDisAmount) AS DisAmount,issuenote_hed.SalesInvNo,
+                                (issuenote_hed.SalesCashAmount) AS CashAmount,                          
+                                (issuenote_hed.SalesInvAmount) AS InvAmount,
+                                (issuenote_hed.SalesVatAmount) AS VatAmount,
+                                (issuenote_hed.SalesNbtAmount) AS NbtAmount,
+                                (issuenote_hed.SalesNetAmount) AS NetAmount,customer.CusName,
+                                customer.RespectSign');
+            $this->db->from('issuenote_hed');
+            $this->db->join('customer', 'customer.CusCode = issuenote_hed.SalesCustomer', 'INNER');
+            $this->db->where('DATE(issuenote_hed.SalesDate) <=', $enddate);
+            $this->db->where('DATE(issuenote_hed.SalesDate) >=', $startdate);
+            $this->db->where('issuenote_hed.InvIsCancel', 0);
+            if (isset($invtype) && $invtype != '') {
+                $this->db->where('issuenote_hed.SalesInvType', $invtype);
+            }
+
+            if (isset($salesperson) && $salesperson != '') {
+                $this->db->where('issuenote_hed.SalesPerson', $salesperson);
+            }
+
+
+            $this->db->order_by('issuenote_hed.SalesDate', 'DESC');
+        }
+        return $this->db->get()->result();
+    }
+
+    public function loadIssueNoteByJobs($startdate, $enddate, $location = NULL, $locationAr = NULL, $SalesPerson = NULL) {
+        $this->db->select('jobcardhed.JobCardNo,
+                           jobcardhed.appoimnetDate,
+                           jobcardhed.JestimateNo,
+                           jobcardhed.Advance,
+                           issuenote_hed.*,customer.CusName,customer.CusCode,customer.RespectSign
+                           ');
+        $this->db->from('issuenote_hed');
+        $this->db->join('jobcardhed', 'jobcardhed.JobCardNo = issuenote_hed.SalesPONumber', 'INNER');
+        $this->db->join('customer', 'customer.CusCode = jobcardhed.JCustomer', 'INNER');
+        $this->db->where('DATE(jobcardhed.appoimnetDate) <=', $enddate);
+        $this->db->where('DATE(jobcardhed.appoimnetDate) >=', $startdate);
+        $this->db->where('jobcardhed.IsCancel', 0);
+        if (isset($location) && $location != '') {
+            $this->db->where_in('jobcardhed.JLocation', $locationAr);
+        }
+
+        if (isset($SalesPerson) && $SalesPerson != '') {
+            $this->db->where_in('issuenote_hed.SalesPerson', $SalesPerson);
+        }
+
+        $this->db->order_by('jobcardhed.JobCardNo');
+
+        $result=$this->db->get();
+
+        $list = array();
+        foreach ($result->result() as $row) {
+            $list[$row->JobCardNo." | ".$row->appoimnetDate." | ".$row->JobCardNo." | ".$row->CusName." ------------ Total Advance Amount - ".$row->Advance][] = $row;
+        }
+        return $list;
     }
 }

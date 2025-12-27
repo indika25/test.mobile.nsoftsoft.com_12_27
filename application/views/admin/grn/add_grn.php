@@ -70,15 +70,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                         <input type="number" tabindex="6"  min="0" step="200" name="additional" value="0" id="additional" class="form-control" />
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                        <label class="col-sm-4 control-label">Price Level</label>  
-                                        <div class="col-sm-6">
-                                            <select tabindex="7" class="form-control" id="priceLevel"> 
-                                             <?php foreach ($plv as $pl) { ?>
-                                            <option value="<?php echo $pl->PL_No; ?>" <?php if ($pl->PL_No == 1) {echo 'selected';}?>><?php echo $pl->PriceLevel; ?></option>
-                                            <?php } ?></select>
-                                        </div>
-                                    </div>
+                               
                             </form>
                         </div>
                         <div  class="col-md-3">
@@ -130,6 +122,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                             <input type="checkbox" tabindex="8" class="prd_icheck" name="suppliercheck" value="1"/>
                                         </div>
                                     </div>
+                                    <!-- <div class="form-group">
+                                        <label class="col-sm-4 control-label">Price Level</label>  
+                                        <div class="col-sm-6">
+                                            <select tabindex="7" class="form-control" id="priceLevel"> 
+                                             <?php foreach ($plv as $pl) { ?>
+                                            <option value="<?php echo $pl->PL_No; ?>" <?php if ($pl->PL_No == 1) {echo 'selected';}?>><?php echo $pl->PriceLevel; ?></option>
+                                            <?php } ?></select>
+                                        </div>
+                                    </div> -->
                                     <div class="form-group">
                                         <div id="lbl_refCode">
                                             <label for="itemCode" class="col-sm-4 control-label">Product Code <span class="required"></span></label>
@@ -185,6 +186,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="number" tabindex="12"  min="0" step="1" class="form-control" required="required"  name="unitcost" id="unitcost" placeholder="Enter Qty"  value="0">
                                             </div>
                                         </div>
+                                         <div class="form-group">
+                                            <label for="product" class="col-sm-4 control-label">Branch Cost <span class="required">*</span></label>
+                                            <div class="col-sm-4">
+                                                <input type="number" tabindex="12"  min="0" step="1" class="form-control" required="required"  name="branchUnitcost" id="branchUnitcost" placeholder="Enter Qty"  value="0">
+                                            </div>
+                                        </div>
                                         <div class="form-group">
                                             <label for="sellingPrice"class="col-sm-4 control-label">Selling Price <span class="required">*</span></label>
                                             <div class="col-sm-6">
@@ -193,15 +200,31 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="hidden" class="form-control" required="required"  name="batchCode" id="batchCode">
                                                 <input type="hidden" class="form-control" required="required"  name="upc" id="upc">
                                                 <input type="hidden" class="form-control" required="required"  name="isSerial" id="isSerial">
+                                                <input type="hidden" class="form-control" required="required"  name="isEmiNo" id="isEmiNo">
+                                            </div>
+                                        </div>
+                                       <div class="form-group">
+                                            <label for="sellingPrice"class="col-sm-4 control-label">Wholesale Price <span class="required">*</span></label>
+                                            <div class="col-sm-6">
+                                                <input type="number"  tabindex="13"  min="0" step="1" class="form-control" name="wholesalesPrice" id="wholesalesPrice" placeholder="Enter Wholesales Price">
+                                                
                                             </div>
                                         </div>
                                         <div class="form-group" id="dv_SN">
-                                            <label for="product" class="col-sm-4 control-label">Serial No <span class="required">*</span></label>
+                                            <label for="product" class="col-sm-4 control-label">Seial No <span class="required">*</span></label>
                                             <div class="col-sm-6">
-                                                <input type="text" tabindex="14" class="form-control" required="required"  name="serialNo" id="serialNo" placeholder="Enter Serial No"  value="">
+                                                <input type="hidden" tabindex="14" class="form-control" required="required"  name="serialNo" id="serialNo" placeholder="Enter Serial No"  value="">
+                                                <!-- <input type="text" tabindex="14" class="form-control" required="required"  name="emiNo" id="emiNo" placeholder="Enter Serial No"  value=""> -->
                                                 <input type="hidden" tabindex="14" class="form-control" required="required"  name="serialQty" id="serialQty"  value="0">
                                             </div>
                                         </div>
+                                        <div class="form-group" id="emiDiv"> 
+                                             <label for="sellingPrice"class="col-sm-4 control-label">Emi No <span class="required">*</span></label>
+                                             <div class="col-sm-6">
+                                                 <input type="number"  tabindex="13"  min="0" step="1" class="form-control" name="emiNo" id="emiNo" placeholder="Enter IEMI Number">
+                                                 <small id="emiNoError" class="text-danger" style="display:none;"></small>
+                                             </div>
+                                         </div>
                                         <div class="form-group">
                                             <label for="product" class="col-sm-7 control-label">Product Wise Discount<span class="required">*</span></label>
                                             <div class="col-sm-3"><input tabindex="15" type="radio" checked required="required" class="prd_icheck"  name="discount_type" id="productWise" value="1"></div>
@@ -246,10 +269,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                             <th>Product Name</th>
                                             <th>Unit Cost</th>
                                             <th>Quantity</th>
+                                            <th>Free Quantity</th>
                                             <th>Unit Price</th>
+                                            <th>Branch Cost</th>
+                                          
+                                            <th>Whole sales Price</th>
                                             <th>Discount (%)</th>
                                             <th>Total Net Amount</th>
-                                            <th>Serial</th>
+                                            <th>EMI No</th>
+                                            <th>Serial No</th>
                                             <th></th>
                                         </tr>
                                     </thead>

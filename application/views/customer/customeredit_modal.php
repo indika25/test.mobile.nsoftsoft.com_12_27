@@ -42,7 +42,7 @@
                             <div class="col-md-9">
                                 <div class="form-group">
                                 <label for="cusName">Customer Name </label>
-                                <input type="text" required="required" value="<?php echo $cusdata->CusName; ?>" class="form-control" name="cusName" id="cusName" placeholder="First name">
+                                <input type="text" onkeydown="return /[a-zA-Z0\s]/i.test(event.key)" required="required" value="<?php echo $cusdata->CusName; ?>" class="form-control" name="cusName" id="cusName" placeholder="First name">
                                 </div>
                             </div>
                             

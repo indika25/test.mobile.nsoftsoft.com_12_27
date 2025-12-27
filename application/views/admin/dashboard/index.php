@@ -91,6 +91,30 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         </div>
     </div>
     <div class="row">
+        <div class="col-md-3 col-sm-6 col-xs-12">
+            <a href="<?php echo site_url('admin/Salesinvoice/addSalesInvoice'); ?>">
+                <div class="info-box">
+                    <span class="info-box-icon bg-maroon"><i class="fa fa-plus"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Invoice</span>
+                        <span class="info-box-number">Add Invoice</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 col-sm-6 col-xs-12">
+            <a href="<?php echo site_url('admin/Salesinvoice/all_sales_invoice'); ?>">
+                <div class="info-box">
+                    <span class="info-box-icon bg-lime"><i class="fa fa-print"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Invoice</span>
+                        <span class="info-box-number">All Invoice</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    <div class="row">
         <div class="col-md-12"></div>
     </div>
     </section>

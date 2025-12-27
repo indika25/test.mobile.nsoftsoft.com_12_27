@@ -24,10 +24,12 @@ class Report extends Admin_Controller {
         $this->data['pagetitle'] = $this->page_title->show();
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['staff'] = $this->db->select()->from('salespersons')->where('RepType',6)->get()->result();
         $people = array("0", "10", "13");
+        $role = $_SESSION['role'];
 
-        if (in_array($_SESSION['user_id'], $people)) {
-            $this->template->admin_render('admin/report/salesbydate2', $this->data);
+        if ($role == 1) {
+            $this->template->admin_render('admin/report/salesbydate', $this->data);
         } else {
             $this->template->admin_render('admin/report/salesbydate2', $this->data);
         }
@@ -126,6 +128,40 @@ class Report extends Admin_Controller {
         }
     }
 
+    public function directsalesbydepartment() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Sales', 'admin/report/salesbydepartment');
+        $this->page_title->push(('Sale by Department'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['products'] = $this->Report_model->loadproduct();
+        $people = array("0", "10", "13");
+
+        if (in_array($_SESSION['user_id'], $people)) {
+            $this->template->admin_render('admin/report/possalebydepartment', $this->data);
+        } else {
+            $this->template->admin_render('admin/report/possalebydepartment', $this->data);
+        }
+    }
+
+    public function salesbyDepartment() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Sales', 'admin/report/salesbydepartment');
+        $this->page_title->push(('Sale by Department'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['products'] = $this->Report_model->loadproduct();
+        $people = array("0", "10", "13");
+
+        if (in_array($_SESSION['user_id'], $people)) {
+            $this->template->admin_render('admin/report/salesbydepartment', $this->data);
+        } else {
+            $this->template->admin_render('admin/report/salesbydepartment', $this->data);
+        }
+    }
+
     public function salesbydatePos() {
         $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
         $this->breadcrumbs->unshift(1, 'Sales', 'admin/report/salesbydate');
@@ -213,7 +249,43 @@ class Report extends Admin_Controller {
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->data['locations'] = $this->Report_model->loadroot();
         $this->data['products'] = $this->Report_model->loadproduct();
+
+        $role = $_SESSION['role'];
+
+        if ($role == 1){
+
         $this->template->admin_render('admin/report/serialreport', $this->data);
+        } else {
+
+        $this->template->admin_render('admin/report/serialreport_without_cost', $this->data);
+        }
+    }
+
+      public function iemistock() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Stock', 'admin/report/iemireport');
+        $this->page_title->push(('Product IEMI Stock'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['products'] = $this->Report_model->loadproduct();
+
+     
+
+        $this->template->admin_render('admin/report/iemireport', $this->data);
+        
+    }
+
+      public function serialiemistock() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Stock', 'admin/report/serialiemireport');
+        $this->page_title->push(('Product Serial IEMI Stock'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['products'] = $this->Report_model->loadproduct();
+        $this->template->admin_render('admin/report/serialiemistock', $this->data);
+        
     }
 
     public function productreport() {
@@ -223,7 +295,16 @@ class Report extends Admin_Controller {
         $this->data['pagetitle'] = $this->page_title->show();
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->data['locations'] = $this->Report_model->loadroot();
+
+        $role = $_SESSION['role'];
+
+        if ($role == 1){
+
         $this->template->admin_render('admin/report/productreport', $this->data);
+        } else {
+
+        $this->template->admin_render('admin/report/productreport_without_cost', $this->data);
+        }
     }
 
     public function pricereport() {
@@ -255,7 +336,16 @@ class Report extends Admin_Controller {
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->data['locations'] = $this->Report_model->loadroot();
         $this->data['products'] = $this->Report_model->loadproduct();
+
+        $role = $_SESSION['role'];
+
+        if ($role == 1){
+
         $this->template->admin_render('admin/report/lowstockreport', $this->data);
+        } else {
+
+        $this->template->admin_render('admin/report/lowstockreport_without_cost', $this->data);
+        }
     }
     
     public function trasferreport() {
@@ -277,8 +367,127 @@ class Report extends Admin_Controller {
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->data['locations'] = $this->Report_model->loadroot();
         $this->data['products'] = $this->Report_model->loadproduct();
-        $this->template->admin_render('admin/report/grnreport', $this->data);
+
+        $role = $_SESSION['role'];
+
+        if ($role == 1){
+
+            $this->template->admin_render('admin/report/grnreport', $this->data);
+        } else {
+
+            $this->template->admin_render('admin/report/grnreport_without_cost', $this->data);
+        }
     }
+    
+    public function partRequest() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'GRN', 'admin/report/Vastage Report');
+        $this->page_title->push(('Part Request Detail'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['products'] = $this->Report_model->loadproduct();
+
+        $role = $_SESSION['role'];
+
+
+            $this->template->admin_render('admin/report/partrequest', $this->data);
+
+    }
+
+    public function partrequestreportjson() {
+        $enddate = $_POST['enddate'];
+        $startdate = $_POST['startdate'];
+        $route = isset($_POST['route']) ? $_POST['route'] : NULL;
+        $from = isset($_POST['location_from']) ? $_POST['location_from'] : NULL;
+        $pro = isset($_POST['productsearch']) ? $_POST['productsearch'] : NULL;
+        $supplier = isset($_POST['supplier']) ? $_POST['supplier'] : NULL;
+        $isall = isset($_POST['isall']) ? 1 : 0;
+        $fromLocationID = $_SESSION['location'];
+        $fromLocation = $this->db->select('location')->from('location')->where(array('location_id'=> $fromLocationID))->get()->row()->location;
+
+        $this->db->select('materialrequestnotedtl.*,location.location AS ToLocation,materialrequestnotehed.FromLocation,product.branchCost AS CostPrice,product.Prd_Description,materialrequestnotehed.IsConfirm,materialrequestnotehed.IsCancel,(materialrequestnotedtl.ReceiveDate) AS TransDate,DATE(materialrequestnotedtl.MrnDate) As grndate');
+        $this->db->from('materialrequestnotedtl');
+        if (isset($enddate) && $enddate != '' ) {
+            $this->db->where('DATE(materialrequestnotedtl.MrnDate) <=', $enddate);
+        }
+        if (isset($startdate) && $startdate != '' ) {
+            $this->db->where('DATE(materialrequestnotedtl.MrnDate) >=', $startdate);
+        }
+        if (isset($from) && $from != '' ) {
+            $this->db->where('materialrequestnotehed.Location',$from);
+        }
+
+        if (isset($isall) && $isall == 0 ) {
+            $this->db->where('materialrequestnotehed.IsCancel',0);
+        }
+        if (isset($pro) && $pro != '' ) {
+            $this->db->where('materialrequestnotedtl.ProductCode',$pro);
+        }
+
+        $this->db->join('product', 'product.ProductCode=materialrequestnotedtl.ProductCode');
+        $this->db->join('materialrequestnotehed', 'materialrequestnotehed.MrnNo=materialrequestnotedtl.MrnNo');
+        $this->db->join('location', 'location.location_id=materialrequestnotehed.ToLocation');
+        $data = $this->db->get();
+
+        $list = array();
+        foreach ($data->result() as $row) {
+            $list[$row->MrnNo." - ".$row->grndate." - ".$fromLocation." TO ".$row->ToLocation][] = $row;
+        }
+        echo json_encode($list);die;
+    }
+    
+    public function allproductreport() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Product', 'admin/report/productreport');
+        $this->page_title->push(('All Product Details'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+
+        $role = $_SESSION['role'];
+
+
+            $this->template->admin_render('admin/report/allproduct', $this->data);
+
+    }
+
+     public function departrproductreport() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Product', 'admin/report/departrproductreport');
+        $this->page_title->push(('Department Wise Product Details'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+
+        $role = $_SESSION['role'];
+
+
+            $this->template->admin_render('admin/report/departrproductreport', $this->data);
+
+    }
+
+    public function loadAllProduct() {
+        $product = isset($_POST['productsearch']) ? $_POST['productsearch'] : NULL;
+        $isall = isset($_POST['isall']) ? 1 : 0;
+        // $route = isset($_POST['route']) ? $_POST['route'] : NULL;
+        $dep = isset($_POST['dep_ar']) ? json_decode($_POST['dep_ar']) : NULL;
+        $subdep = isset($_POST['subdep_ar']) ? json_decode($_POST['subdep_ar']) : NULL;
+        $subcat = isset($_POST['subcategory_ar']) ? json_decode($_POST['subcategory_ar']) : NULL;
+        $sup = isset($_POST['supplier']) ? $_POST['supplier'] : NULL;
+        $routeAr = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
+        $result = $this->Report_model->allproductdetail($routeAr, $isall, $product,$dep,$subdep,$sup,$subcat);
+        echo json_encode($result);die;
+    }
+
+     public function loadDepartmentWiseProduct() {
+  
+        $dep = isset($_POST['dep_ar']) ? json_decode($_POST['dep_ar']) : NULL;
+       
+        $result = $this->Report_model->loadDepartmentWiseProduct($dep);
+        echo json_encode($result);die;
+    }
+    
     
     public function cashfloat() {
         $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
@@ -544,13 +753,16 @@ class Report extends Admin_Controller {
         $this->data['pagetitle'] = $this->page_title->show();
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->data['locations'] = $this->Report_model->loadroot();
-        $people = array("1", "10", "13");
-
-        if (in_array($_SESSION['user_id'], $people)) {
-            $this->template->admin_render('admin/report/dailybalancedetailreport', $this->data);
-        } else {
-            $this->template->admin_render('admin/report/dailybalancedetailreport', $this->data);
-        }
+        $this->data['users'] = $this->Report_model->loaduser();
+        $user = $this->ion_auth->user()->row();
+        $this->data['is_per'] = $this->db->select('is_delete')
+            ->from('system_permission_set')
+            ->where('role_id',$user->role)
+            ->where('per_code', 'M15')
+            ->get()->row(); 
+       
+        
+        $this->template->admin_render('admin/report/dailybalancedetailreport', $this->data);
     }
 
     public function monthlybalancedetail() {
@@ -714,6 +926,22 @@ class Report extends Admin_Controller {
         echo json_encode($result);die;
     }
 
+    public function loadreportdirectdepartmentby() {
+        $this->output->set_content_type('application_json');
+        $enddate = $_POST['enddate'];
+        $startdate = $_POST['startdate'];
+        $invtype = isset($_POST['inv_type']) ? $_POST['inv_type'] : 0;
+        $route = isset($_POST['route']) ? $_POST['route'] : NULL;
+        $salesperson = isset($_POST['salesperson']) ? $_POST['salesperson'] : 0;
+        $product = isset($_POST['product']) ? $_POST['product'] : 0;
+        $department = isset($_POST['department']) ? $_POST['department'] : 0;
+        $subdepartment = isset($_POST['subdepartment']) ? $_POST['subdepartment'] : 0;
+        $subcategory_ar = isset($_POST['subcategory_ar']) ? $_POST['subcategory_ar'] : 0;
+        $routeAr = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
+        $result = $this->Report_model->gensalesreportbyroutefordepartment($startdate, $enddate, $route,$routeAr,$invtype,$salesperson,$product,$department,$subdepartment);
+        echo json_encode($result);die;
+    }
+
     public function loadreport2() {
         $this->output->set_content_type('application_json');
         $enddate = $_POST['enddate'];
@@ -753,7 +981,36 @@ class Report extends Admin_Controller {
         $subcat = isset($_POST['subcategory_ar']) ? json_decode($_POST['subcategory_ar']) : NULL;
          $sup = isset($_POST['supplier']) ? $_POST['supplier'] : NULL;
          $routeAr = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
-        $result = $this->Report_model->productdetailserial($routeAr, $isall, $product,$dep,$subdep,$sup,$subcat);
+         $transfer = isset($_POST['transfer']) ? $_POST['transfer'] : NULL;
+        $result = $this->Report_model->productdetailserial($transfer,$routeAr, $isall, $product,$dep,$subdep,$sup,$subcat);
+        echo json_encode($result);die;
+    }
+
+     public function loadiemisockreport() {
+        $product = isset($_POST['productsearch']) ? $_POST['productsearch'] : NULL;
+        $isall = isset($_POST['isall']) ? $_POST['isall'] : 'all';
+        // $route = isset($_POST['route']) ? $_POST['route'] : NULL;
+        $dep = isset($_POST['dep_ar']) ? json_decode($_POST['dep_ar']) : NULL;
+        $subdep = isset($_POST['subdep_ar']) ? json_decode($_POST['subdep_ar']) : NULL;
+        $subcat = isset($_POST['subcategory_ar']) ? json_decode($_POST['subcategory_ar']) : NULL;
+         $sup = isset($_POST['supplier']) ? $_POST['supplier'] : NULL;
+         $routeAr = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
+         $transfer = isset($_POST['transfer']) ? $_POST['transfer'] : NULL;
+        $result = $this->Report_model->loadiemisockreport($transfer,$routeAr, $isall, $product,$dep,$subdep,$sup,$subcat);
+        echo json_encode($result);die;
+    }
+
+     public function loadserialiemisockreport() {
+        $product = isset($_POST['productsearch']) ? $_POST['productsearch'] : NULL;
+        $isall = isset($_POST['isall']) ? $_POST['isall'] : 'all';
+        // $route = isset($_POST['route']) ? $_POST['route'] : NULL;
+        $dep = isset($_POST['dep_ar']) ? json_decode($_POST['dep_ar']) : NULL;
+        $subdep = isset($_POST['subdep_ar']) ? json_decode($_POST['subdep_ar']) : NULL;
+        $subcat = isset($_POST['subcategory_ar']) ? json_decode($_POST['subcategory_ar']) : NULL;
+         $sup = isset($_POST['supplier']) ? $_POST['supplier'] : NULL;
+         $routeAr = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
+         $transfer = isset($_POST['transfer']) ? $_POST['transfer'] : NULL;
+        $result = $this->Report_model->loadserialiemisockreport($transfer,$routeAr, $isall, $product,$dep,$subdep,$sup,$subcat);
         echo json_encode($result);die;
     }
 
@@ -922,6 +1179,7 @@ class Report extends Admin_Controller {
             die;
         }
     }
+    
     
     public function supplierjson() {
         if (isset($_GET['q'])) {
@@ -1182,7 +1440,15 @@ class Report extends Admin_Controller {
         $startdate = $_POST['startdate'];
         $route     = isset($_POST['route']) ? $_POST['route'] : NULL;
         $routeAr   = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
-
+        $user = $this->session->userdata('user_id');
+        if($user==1){
+            $user_id = isset($_POST['userid']) ? $_POST['userid'] : NULL;
+           
+        }else{
+            $user_id = $this->session->userdata('user_id');
+            
+        }
+       
         $bal_date = $this->db->select('MAX(date(JobInvoiceDate)) As baldate')->from('jobinvoicehed')->where('JobLocation',$route)->where('date(JobInvoiceDate)<',$enddate)->get()->row()->baldate;
         
         
@@ -1195,51 +1461,53 @@ class Report extends Admin_Controller {
         $result['pendingjob']   =  $this->db->select('Count(JobCardNo) as new')->from('jobcardhed')->where('JLocation',$route)->where('DATE(appoimnetDate)',$enddate)->where('IsCompelte',0)->get()->row()->new;
         $result['overjob']      =  $this->db->select('Count(JobCardNo) as new')->from('jobcardhed')->where('JLocation',$route)->where('DATE(appoimnetDate)=',$enddate)->where('DATE(deliveryDate)<',$enddate)->where('IsCompelte',0)->get()->row()->new;
         // $result['cashier'] =  $this->db->select('users.first_name')->from('cashflot')->join('users','users.id=cashflot.SystemUser')->where('DATE(FlotDate)',date("Y-m-d"))->get()->row()->first_name;
-        
-        $result['pro']         = $this->Report_model->genjobdaysalesumreportbypayment($startdate, $enddate, $route,$routeAr);
-        $result['cash']        = $this->Report_model->genjobdaycashsumreportbyroute($startdate, $enddate, $route,$routeAr);
-        $result['prevcash']    = $this->Report_model->genjobdaysumreportbyroute($startdate, $bal_date, $route,$routeAr);
-        $result['expenses']    = $this->Report_model->expensesbydate($routeAr,$startdate, $enddate, 1);
-        $result['earn']        = $this->Report_model->expensesbydate($routeAr,$startdate, $enddate, 0);
-        $result['inout']       = $this->Report_model->cashinoutbyroutebytype($startdate, $enddate, $route,$routeAr,12);
-        $result['salary']      = $this->Report_model->cashinoutsalarybytype($startdate, $enddate, $route,$routeAr,12);
-        $result['expearn']     = $this->Report_model->cashfloatbytype($startdate, $enddate, $route,$routeAr,12,'');
-        $result['procash']     = $this->Report_model->gencashreportbyroute($startdate, $enddate, $route,$routeAr);
-        $result['prevprocash'] = $this->Report_model->gencashreportbyroute($startdate, $bal_date, $route,$routeAr);
-        $result['product']     = $this->Report_model->gencashreportbyproduct($startdate, $enddate, $route,$routeAr);
-        $result['part']        = $this->Report_model->gencashreportbypart($startdate, $enddate, $route,$routeAr);
-        $result['suppay']      = $this->Report_model->totalsupplierpayment($startdate, $enddate, $route,$routeAr);
-        $result['advance']     = $this->Report_model->totalcuspaymentsummary($startdate, $enddate, $route,$routeAr,2);
-        $result['cuspay']      = $this->Report_model->totalcuspaymentsummary($startdate, $enddate, $route,$routeAr,1);
-        $result['easy']        = $this->Report_model->gencashreportbyeasy($startdate, $enddate, $route,$routeAr);
-        $result['coder']        = $this->Report_model->gencashreportbycoder($startdate, $enddate, $route,$routeAr);
+    
+        $result['pro']         = $this->Report_model->genjobdaysalesumreportbypayment($startdate, $enddate, $route,$routeAr,$user_id);
+        $result['cash']        = $this->Report_model->genjobdaycashsumreportbyroute($startdate, $enddate, $route,$routeAr,$user_id);
+        $result['prevcash']    = $this->Report_model->genjobdaysumreportbyroute($startdate, $bal_date, $route,$routeAr,$user_id);
+        $result['expenses']    = $this->Report_model->expensesbydate($routeAr,$startdate, $enddate, 1,$user_id);
+        $result['earn']        = $this->Report_model->expensesbydate($routeAr,$startdate, $enddate, 0,$user_id);
+        $result['inout']       = $this->Report_model->cashinoutbyroutebytype($startdate, $enddate, $route,$routeAr,12,$user_id);
+        $result['salary']      = $this->Report_model->cashinoutsalarybytype($startdate, $enddate, $route,$routeAr,12,$user_id);
+        $result['expearn']     = $this->Report_model->cashfloatbytype($startdate, $enddate, $route,$routeAr,12,$user_id);
+        $result['procash']     = $this->Report_model->gencashreportbyroute($startdate, $enddate, $route,$routeAr,$user_id);
+        $result['prevprocash'] = $this->Report_model->gencashreportbyroute($startdate, $bal_date, $route,$routeAr,$user_id);
+        $result['product']     = $this->Report_model->gencashreportbyproduct($startdate, $enddate, $route,$routeAr,$user_id);
+        $result['part']        = $this->Report_model->gencashreportbypart($startdate, $enddate, $route,$routeAr,$user_id);
+        $result['suppay']      = $this->Report_model->totalsupplierpayment($startdate, $enddate, $route,$routeAr,$user_id);
+        $result['advance']     = $this->Report_model->totalcuspaymentsummary($startdate, $enddate, $route,$routeAr,2,$user_id);
+        $result['cuspay']      = $this->Report_model->totalcuspaymentsummary($startdate, $enddate, $route,$routeAr,1,$user_id);
+        $result['easy']        = $this->Report_model->gencashreportbyeasy($startdate, $enddate, $route,$routeAr,$user_id);
+        $result['coder']        = $this->Report_model->gencashreportbycoder($startdate, $enddate, $route,$routeAr,$user_id);
         $result['easycuspay']      = $this->Report_model->totaleasycuspaymentsummary($startdate, $enddate, $route,$routeAr,1);
-        $result['cusodercuspay']      = $this->Report_model->totalcusodercuspaymentsummary($startdate, $enddate, $route,$routeAr,1);
+        $result['cusodercuspay']      = $this->Report_model->totalcusodercuspaymentsummary($startdate, $enddate, $route,$routeAr,1,$user_id);
 
         $isEnd = $this->db->select('EndFlot')->from('cashierbalancesheet')->where('Location',$route)->where('DATE(BalanceDate)=' ,$enddate)->get()->num_rows();
         if($isEnd>0){
-            $result['lastbal']     = $this->db->select('EndFlot')->from('cashierbalancesheet')->where('Location',$route)->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->EndFlot;
+            $result['lastbal']     = $this->db->select('EndFlot')->from('cashierbalancesheet')->where('Location',$route)->where('SystemUser',$user_id)->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->EndFlot;
         }else{
             $result['lastbal']     = 0;
         }
 
-        $isStart = $this->db->select('StartFlot')->from('cashierbalancesheet')->where('Location',$route)->where('DATE(BalanceDate)=' ,$enddate)->get()->num_rows();
+        $isStart = $this->db->select('StartFlot')->from('cashierbalancesheet')->where('Location',$route)->where('SystemUser',$user_id)->where('DATE(BalanceDate)=' ,$enddate)->get()->num_rows();
         if($isStart>0){
-            $result['startbal']     = $this->db->select('StartFlot')->from('cashierbalancesheet')->where('Location',$route)->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->StartFlot;
+            $result['startbal']     = $this->db->select('StartFlot')->from('cashierbalancesheet')->where('Location',$route)->where('SystemUser',$user_id)->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->StartFlot;
         }else{
             $result['startbal']     = 0;
         }
 
-        $isCash = $this->db->select('SystemUser')->from('cashierbalancesheet')->where('Location',$route)->where('DATE(BalanceDate)=' ,$enddate)->get()->num_rows();
+        $isCash = $this->db->select('SystemUser')->from('cashierbalancesheet')->where('Location',$route)->where('SystemUser',$user_id)->where('DATE(BalanceDate)=' ,$enddate)->get()->num_rows();
+       
         if($isCash>0){
-            $result['cashier']     = $this->db->select('first_name')->from('cashierbalancesheet')->join('users','users.id=cashierbalancesheet.SystemUser')->where('cashierbalancesheet.Location',$route)->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->first_name;
+            $result['cashier']     = $this->db->select('first_name')->from('cashierbalancesheet')->join('users','users.id=cashierbalancesheet.SystemUser')->where('cashierbalancesheet.Location',$route)
+            ->where('cashierbalancesheet.SystemUser',$user_id)->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->first_name;
         }else{
             $result['cashier']     = '';
         }
         // $result['startbal']    = $this->db->select('StartFlot')->from('cashierbalancesheet')->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->StartFlot;
         // $result['cashier']     = $this->db->select('first_name')->from('cashierbalancesheet')->join('users','users.id=cashierbalancesheet.SystemUser')->where('DATE(BalanceDate)=' ,$enddate)->order_by('BalanceDate','desc')->limit(1)->get()->row()->first_name;
 
-        $query = $this->db->query("CALL SPR_DAILY_BALANCE_SHEET('$enddate','$route','')");
+        $query = $this->db->query("CALL SPR_DAILY_BALANCE_SHEET('$enddate','$route','$user_id')");
         $result['bal'] =$query->result();
 
         // $query2 = $this->db->query("CALL SPR_DAILY_BALANCE_SHEET('$bal_date','$route','')");
@@ -1846,4 +2114,66 @@ class Report extends Admin_Controller {
         
     }
 
+    public function issueNoteByDate() {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Job Sales', 'admin/report/issueNoteByDate');
+        $this->page_title->push(('Issue Note By Date'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['staff'] = $this->db->select()->from('salespersons')->get()->result();
+        $people = array("0", "10", "13");
+
+        if (in_array($_SESSION['user_id'], $people)) {
+            $this->template->admin_render('admin/report/issueNoteByDate', $this->data);
+        } else {
+            $this->template->admin_render('admin/report/issueNoteByDate', $this->data);
+        }
+    }
+
+    public function loadreportissuenote() {
+        $this->output->set_content_type('application_json');
+        $enddate = $_POST['enddate'];
+        $startdate = $_POST['startdate'];
+        $invtype = isset($_POST['inv_type']) ? $_POST['inv_type'] : 0;
+        $route = isset($_POST['route']) ? $_POST['route'] : NULL;
+        $salesperson = isset($_POST['salesperson']) ? $_POST['salesperson'] : 0;
+        $routeAr = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
+        $result = $this->Report_model->genIssuenoteByDate($startdate, $enddate, $route,$routeAr,$invtype,$salesperson);
+        echo json_encode($result);die;
+    }
+
+    public function issueNoteByJob()
+    {
+        $this->breadcrumbs->unshift(1, 'Reports', 'admin/report');
+        $this->breadcrumbs->unshift(1, 'Job Sales', 'admin/report/issueNoteByDate');
+        $this->page_title->push(('Issue Note By Job'));
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['locations'] = $this->Report_model->loadroot();
+        $this->data['staff'] = $this->db->select()->from('salespersons')->get()->result();
+        $people = array("0", "10", "13");
+
+        if (in_array($_SESSION['user_id'], $people)) {
+            $this->template->admin_render('admin/report/issueNoteByJob', $this->data);
+        } else {
+            $this->template->admin_render('admin/report/issueNoteByJob', $this->data);
+        }
+    }
+    
+    public function loadIssueNoteByJobs() {
+        $this->output->set_content_type('application_json');
+        $enddate = $_POST['enddate'];
+        $startdate = $_POST['startdate'];
+        $route = isset($_POST['route']) ? $_POST['route'] : NULL;
+        $SalesPerson = isset($_POST['salesperson']) ? $_POST['salesperson'] : NULL;
+        $routeAr = isset($_POST['route_ar']) ? json_decode($_POST['route_ar']) : NULL;
+        $result['pro'] = $this->Report_model->loadIssueNoteByJobs($startdate, $enddate, $route, $routeAr, $SalesPerson);
+
+        $result['dis'] =null;
+        $result['expenses'] =null;
+        $result['earn'] =null;
+        echo json_encode($result);
+        die;
+    }
 }

@@ -22,7 +22,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                         <div class="col-sm-4">
                         <form class="form-horizontal">
                         <div class="form-group">
-                                <label for="cusCompany" class="col-sm-4 control-label">Branch <span class="required"></span></label>
+                                <label for="cusCompany" class="col-sm-4 control-label">Branch<span class="required"></span></label>
                                 <div class="col-sm-8">
                                      <select name="branch" required="required"  id="branch" class="form-control">
                                         <option value="">Select a branch</option>
@@ -97,22 +97,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                             href="../../job/edit_job/<?php echo base64_encode($jobHed->JobCardNo); ?>"
                                             class="btn btn-info btn-sm btn-block">Edit</a></div>
                             <?php } ?>
-                            <div class="col-sm-2"><a
-                                        href="../../purchase/addpo?job=<?php echo base64_encode($jobHed->JobCardNo); ?>"
-                                        class="btn btn-info btn-sm btn-block">PO</a></div>
-                            <?php if (in_array("SM51", $blockAdd) || $blockAdd == null) { ?>
-                                <div class="col-sm-2">
-                                    <a href="../../job/estimate_job?type=job&id=<?php echo base64_encode($jobHed->JobCardNo); ?>"
-                                       class="btn btn-info btn-sm ">Estimate</a>
-                                    <!-- <?php if ($jobHed->IsCancel == 0) { ?><button type="button" id="btnPrint" class="btn btn-danger btn-sm btn-block">Cancel</button><?php } ?> -->
-                                </div>
-                            <?php } ?>
-                            <?php if (in_array("M4", $blockAdd) || $blockAdd == null) { ?>
-                                <div class="col-sm-2">
-                                    <a href="../../Salesinvoice/job_invoice?type=job&id=<?php echo base64_encode($jobHed->JobCardNo); ?>"
-                                       class="btn btn-info btn-sm ">Invoice</a>
-                                </div>
-                            <?php } ?>
+
                         </div>
                         <div class="row">
                             <div class="col-sm-12">
@@ -132,9 +117,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                             <div class="col-lg-7">
                                 <div class="row" align="center" style='margin:5px;' id="printArea">
                                                                        <!-- load comapny common header -->
-    <?php $this->load->view('admin/_templates/company_header.php',true); ?>
+                                    <?php $this->load->view('admin/_templates/company_header.php',true); ?>
 
-<table style="border-collapse:collapse;width:700px;margin:5px;font-family: times,Arial, Helvetica, sans-serif;" border="0">
+                                    <table style="border-collapse:collapse;width:700px;margin:5px;font-family: times,Arial, Helvetica, sans-serif;" border="0">
                        
                         <tr style="text-align:left;font-size:15px;">
                             <td style="padding-left:5px;font-size:12px;"> Date  </td>
@@ -146,16 +131,16 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                             <td><b><?php echo $jobHed->JobCardNo?></b></td>
                         </tr>
                         <tr style="text-align:left;font-size:12px;">
-                            <td style="border-top: #000 solid 1px;border-left: #000 solid 1px;padding-left:5px;"> Code</td>
+                            <td style="border-top: #000 solid 1px;border-left: #000 solid 1px;padding-left:5px;">Code</td>
                             <td style="border-top: #000 solid 1px;"> :</td>
                             <td colspan="4" style="border-top: #000 solid 1px;border-right: #000 solid 1px;"><?php echo $jobHed->JCustomer?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Contact Name : <?php echo $invVehi->contactName?></td>
                             <td>&nbsp;</td>
-                            <td style="text-align:left;font-size:15px;"> <b>REG NO</b></td>
-                            <td > :</td>
-                            <td style="text-align:left;font-size:15px;"> <b><?php echo $jobHed->JRegNo?></b></td>
+                            <td style="text-align:left;font-size:15px;"> <b></b></td>
+                            <td > </td>
+                            <td style="text-align:left;font-size:15px;"> <b></b></td>
                         </tr>
                         <tr style="text-align:left;font-size:12px;">
-                            <td style="border-left: #000 solid 1px;padding: 0 px5px;" valign="top">Customer Name </td>
+                            <td style="border-left: #000 solid 1px;padding-left: 5px;" valign="top">Customer Name </td>
                             <td> :</td>
                             <td rowspan="3" colspan="4" valign="top" style="border-right: #000 solid 1px;border-bottom: #000 solid 1px;"> <span><a href="<?php echo base_url('admin/payment/view_customer/').$invCus->CusCode ?>"><?php echo $invCus->DisplayName;?></a></span><br>
                 <?php if ($invCus->DisType==4): ?>
@@ -170,42 +155,20 @@ defined('BASEPATH') OR exit('No direct script access allowed');
             </span><br>    
             <span id="lbladdress2">Tel : <?php echo $invCus->LanLineNo;?> Mobile : <?php echo $invCus->MobileNo;?></span></td>
                             <td>&nbsp;</td>
-                            <td colspan="3" rowspan="6" style="padding-left:20px;">
-                            <table style="font-size: 11px">
+                            <td colspan="3" rowspan="6" style="border-top: #000 solid 1px;border-right: #000 solid 1px; border-bottom: #000 solid 1px; border-left: #000 solid 1px; padding-left:20px;">
+                            <table style="font-size: 12px">
                             <tbody>
+
                                     <tr>
-                                        <td>No of Job Card</td><td>:</td><td><?php echo $job_count->noofjobs?></td>
+                                        <td>Delivery Date</td><td>&nbsp; : &nbsp;</td><td><?php echo substr($jobHed->deliveryDate,0,10)?></td>
                                     </tr>
-                                    <tr>
-                                        <td>Origin</td><td>:</td><td><?php echo $invVehi->body_color?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Delivery Date</td><td>:</td><td><?php echo substr($jobHed->deliveryDate,0,10)?></td>
-                                    </tr>
-                                     <tr>
-                                        <td>Delivery Time</td><td>:</td><td><?php echo substr($jobHed->deliveryDate,10,9)?></td>
-                                    </tr>
-                                     <tr>
-                                        <td>Make</td><td>:</td><td><?php echo $invVehi->make?></td>
-                                    </tr>
-                                     <tr>
-                                        <td>Model No</td><td>:</td><td><?php echo $invVehi->model?></td>
-                                    </tr>
-                                     <tr>
-                                        <td>Odo Meter</td><td>:</td><td><?php echo $jobHed->OdoIn?></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Your Ref</td><td>:</td><td></td>
-                                    </tr>
-                                    <tr>
-                                        <td>Next Service</td><td>:</td><td><?php if($jobHed->NextService>0){echo ($jobHed->OdoIn+$jobHed->NextService);}?></td>
-                                    </tr>
+
                                 </tbody>
                             </table>
                             </td>
                         </tr>
                         <tr style="text-align:left;font-size:12px;">
-                            <td style="border-left: #000 solid 1px;" valign="top">Address </td>
+                            <td style="border-left: #000 solid 1px;padding-left: 5px;" valign="top">Address </td>
                             <td></td>
                             <td>&nbsp;</td>
                         </tr>
@@ -214,40 +177,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                             <td  style="border-bottom: #000 solid 1px;"></td>
                             <td >&nbsp;</td>
                         </tr>
-                        <tr style="text-align:left;font-size:12px;">
-                            <td> Email Address</td>
-                            <td> :</td>
-                            <td > <?php echo $invCus->Email?></td>
-                            <td colspan="3">Payment Type &nbsp;&nbsp;<?php echo $jobHed->payType?></td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr style="text-align:left;font-size:12px;">
-                            <td> S.A.Name</td>
-                            <td> :</td>
-                            <td><?php echo $jobSerAdv->first_name." ".$jobSerAdv->last_name?></td>
-                            <td  colspan="4"></td>
-                        </tr>
-                        <tr style="text-align:left;font-size:12px;">
-                            <td> Tel/ Mob/ Fax No : </td>
-                            <td> :</td>
-                            <td> <?php echo $jobSerAdv->phone?></td>
-                            <td ></td>
-                            <td > </td>
-                            <td></td>
-                            <td>&nbsp;</td>
-                        </tr>
-                        <tr style="text-align:left;font-size:12px;">
-                            <td> V. I. No </td>
-                            <td>:</td>
-                            <td colspan="4"> <?php echo $invVehi->ChassisNo?></td>
-                            <td>&nbsp;</td>
-                            <td > </td>
-                            <td> </td>
-                            <td></td>
-                        </tr>
-                        <!-- <tr style="text-align:left;font-size:12px;">
-                            <td colspan="10">&nbsp;</td>
-                        </tr> -->
+
                     </table>
                 <style type="text/css" media="screen">
                     #tbl_est_data tbody tr td{
@@ -264,8 +194,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                         <tr>
                             <th style='padding: 3px;'>&nbsp;</th>
                             <th style='padding: 3px;'>&nbsp;</th>
-                            <!-- <th style='padding: 3px;width:100px;'>Rs</th>
-                            <th style='padding: 3px;width:30px;'>Cts.</th> -->
+                        
                         </tr>
                     </thead>
                     <tbody>
@@ -278,58 +207,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                    <tr><td style='height:150px;'></td><td style='height:150px;'></td></tr>
                     </tbody>
                     <tfoot>
-                        <!-- <tr><th colspan="2" style='text-align:right'>Total Amount  </th><th colspan="2" style='text-align:right'></th></tr> -->
-                        </tfoot>
+                    </tfoot>
                         </table><br>
-                       <!--  <div id="foot" style='border: 1px #000 solid;width:700px;padding: 5px;' >
-                        <table style="border-collapse:collapse;width:683px;padding:2px;font-size: 12px;">
-                        <tr>
-                            <td rowspan="9" style='padding:5px;padding-right:20px;border:1px solid #000; text-align:left;font-size: 12px;width:450px;'>
-                                All things are done to the manufactured recommended standards - any work carried out,
-                    outside the standards are based on customer request and No Gurantee will be given on this
-                    type of work.<br>
-                    After disassembling, if any defect found supplementary estimate would be submitted for
-                    your approval.<br>
-                    All charges for repairs and materials are payable in full upon completion of work. The
-                    company reserves the right to retain to possession of the vehicle until such charges are
-                    settled in full.The company disclaims all responsibility whatsoever for loss or damage to
-                    vehicle or other property belonging to customers within the vehicle. However the usual
-                    precautions are taken by the company against fire, theft.ect. To eliminate the risk of loss or
-                    damage, the company kindly requested to remove as far as possible all personal belongs
-                    before leaving the vehicle for repairs.<br>
-                    I here by authorize the repair work listed above to be done with necessary materials an I
-                    grant <?php echo $company['CompanyName'] ?> 's authority to drive the vehicle for purpose of road test.
-                    Delivery subject to availability of parts and man power.<br>
-                            </td><td style='width: 5px' ></td>
-                            <td colspan="2" style='border:1px solid #000;'>&nbsp;</td>
-                        </tr>
-                        <tr><td colspan="3" style='height: 4px;'>&nbsp;</td></tr>
-                        <tr><td></td><td colspan="2" style='border:1px solid #000;text-align: center;'>I Certify that there are no
-valubles in the car</td></tr>
-                        <tr><td colspan="3" style='height: 4px;'>&nbsp;</td></tr>
-                         <tr><td colspan="3" >&nbsp;</td></tr>
-                        <tr><td></td><td colspan="2" style='border-top:1px dashed #000;text-align: center;'>Customer Authorisation</td></tr>
-                        <tr><td colspan="3" style='height: 4px;'>&nbsp;</td></tr>
-                        <tr><td></td><td colspan="2" style='border-top:1px dashed #000;text-align: center;'>Name</td></tr>
-                         <tr><td colspan="3" >&nbsp;</td></tr>
-                </table>
-                </div>
-                <table border="1" style="border-collapse:collapse;width:700px;margin-top:4px; ">
-                    <tbody>
-                        <tr>
-                            <td style="width:500px">FURTHER WORK REQUIR</td><td  style="width:200px">Spare Part Card No &nbsp;:&nbsp;<?php echo $jobHed->SparePartJobNo?></td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">&nbsp;</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">&nbsp;</td>
-                        </tr>
-                    </tbody>
-                </table> -->
+                      
             </div>
                             </div>
-                             <div class="col-lg-1"></div>
+                             <div class="col-lg-1">
+                                
+                             </div>
                             <div class="col-lg-4">
                                 <div class="row"> 
                                 <div class="col-lg-11">
@@ -343,7 +228,7 @@ valubles in the car</td></tr>
                                     <tr><td><?php echo $up->UpdateDate ?></td><td>:</td><td><?php echo $up->Remark." by ".$up->first_name." ".$up->last_name ?></td></tr>
                                   <?php }
                                   endif; ?>
-                                  </table>
+                                </table>
                                   <?php if($estimate){ ?>
                                     <table class="table"  style="font-size:11px;">
                                             <tr><td colspan="4"><h4>Estimates</h4></td></tr>
@@ -368,7 +253,7 @@ valubles in the car</td></tr>
                                     <?php } ?>
                                 </div></div>
                             </div>
-                           <!-- <div class="row row-eq-height"> -->
+                           
                         </div>
                     </div><!-- /.box-body -->
                 </div><!-- /.box -->
@@ -418,6 +303,135 @@ valubles in the car</td></tr>
                     //$this->load->view('admin/job/jobcard-print.php',true); ?>
         </div>
     </div>
+
+<div class="row" id="printAreaPos" align="center" style="margin:0px;">
+
+    <!-- Header Area -->
+    <table style="border-collapse:collapse;width:290px;font-family: Arial, Helvetica, sans-serif;" border="0" align="center">
+
+        <tr style="text-align:center;font-size:13px;">
+            <td colspan="4" style="border-bottom:#000 solid 1px;text-align:center;font-size:15px;font-weight:bold;">
+
+                <div style="
+                    width: 290px;
+                    transform: scale(0.80);
+                    transform-origin: left;
+                    margin: 0 auto;
+                    text-align:center;
+                    display:inline-block;
+                ">
+                    <?php $this->load->view('admin/_templates/company_header.php', true); ?>
+                </div>
+
+            </td>
+        </tr>
+
+        <tr style="text-align:left;font-size:13px;">
+            <td>Job No</td>
+            <td>:</td>
+            <td colspan="2" id="lblJobNo"></td>
+        </tr>
+<tr><td colspan="4" style="height:5px;"></td></tr>
+
+        <tr style="text-align:left;font-size:13px;">
+            <td>Job Date</td>
+            <td>:</td>
+            <td colspan="2" id="lbldate"></td>
+        </tr>
+<tr><td colspan="4" style="height:5px;"></td></tr>
+
+        <tr style="text-align:left;font-size:13px;">
+            <td>Code</td>
+            <td>:</td>
+            <td colspan="2" id="lblCusCode"></td>
+        </tr>
+<tr><td colspan="4" style="height:5px;"></td></tr>
+
+
+        <tr style="text-align:left;font-size:13px;">
+            <td>Customer</td>
+            <td>:</td>
+            <td colspan="2" id="lblCusName"></td>
+        </tr>
+<tr><td colspan="4" style="height:5px;"></td></tr>
+
+         <tr style="text-align:left;font-size:13px;">
+            <td>Telephone No</td>
+            <td>:</td>
+            <td colspan="2" id="lblCusTel"></td>
+        </tr>
+<tr><td colspan="4" style="height:5px;"></td></tr>
+
+
+  <tr style="text-align:left;font-size:13px;">
+            <td>Phone Model</td>
+            <td>:</td>
+            <td colspan="2" id="lblCusPModel"></td>
+        </tr>
+        <tr><td colspan="4" style="height:5px;"></td></tr>
+
+         <tr style="text-align:left;font-size:13px;">
+            <td>Emei No</td>
+            <td>:</td>
+            <td colspan="2" id="lblCusImei"></td>
+        </tr>
+<tr><td colspan="4" style="height:5px;"></td></tr>
+
+
+        
+<tr><td colspan="4" style="height:5px;"></td></tr>
+
+
+    </table>
+
+    <!-- Item Table -->
+  <table id="tbl_jobcard_data" style="border-collapse:collapse;width:290px;padding:0px;font-size:15px;" border="0">
+    <thead>
+        <tr style="background-color:#5d5858;color:#fff;line-height:20px;border-bottom:1px solid #000;border-top:1px solid #000;">
+            <th style="padding:3px;text-align:center;">#</th>
+            <th style="padding:3px;text-align:left;">Job Description</th>
+            <th style="padding:3px;text-align:right;">Price</th>
+        </tr>
+    </thead>
+
+    <tbody id="job_body">
+    
+    </tbody>
+<tfoot>
+        <tr>
+            <td colspan="3">
+                <table style="width:100%;">
+                    <tr>
+                        <td style="font-size:18px;text-align:center;">Thank You come again</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;font-size:9px;">
+                            <i>Software By Nsoft Solutions www.nsoft.lk</i><br>
+                            <i>0716232944</i>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </tfoot>
+</table>
+
+
+    <style type="text/css" media="screen">
+        #tbl_jobcard_data tbody tr td {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+
+</div>
+
+
+
+
+
+
+
 </div>
 <style>
     .shop-items:hover{
@@ -552,14 +566,16 @@ $("#btnSave").click(function(){
         jobNo=$("#jNo").val();
         loadInvoicetoPrint(jobNo);
         $("#btnPrint").click(function(){
+        //    $('#printArea').focus().print();
+$('#printAreaPos').focus().print();
+        
 
-            
-$('#printArea').focus().print();
-});
+         });
+
 
         function loadInvoicetoPrint(JobNo){
 
-        $("#tbl_jobcard_data tbody").html('');
+        $("#job_body").html('');
         $.ajax({
                 type: "POST",
                 url: "../../job/getJobDataById",
@@ -567,23 +583,15 @@ $('#printArea').focus().print();
                 success: function(data)
                 {
                     var resultData = JSON.parse(data);
+                 console.log(resultData);
 
-                    $("#lblcusCode").html(resultData.cus_data.CusCode);
+                    $("#lblCusCode").html(resultData.cus_data.CusCode);
                     $("#lblAddress").html(nl2br(resultData.cus_data.Address01)+",<br><br> ");
                     $("#lblCusName").html(resultData.cus_data.RespectSign+". "+resultData.cus_data.CusName);
                     $("#lblpaymentType").html(resultData.cus_data.payType);
                     $("#lblemail").html(resultData.cus_data.Email);
-                    
-                    $("#lblcusName").html(resultData.vehicle_data.contactName);
-                   
-                    $("#lblmake").html(resultData.vehicle_data.make);
-                    $("#lblmodel").html(resultData.vehicle_data.model);
-                    $("#lblFuelType").html(resultData.vehicle_data.fuel_type);
-                    $("#lblviNo").html(resultData.vehicle_data.ChassisNo);
-                    
-                    $("#lblcountry").html(resultData.vehicle_data.body_color);
 
-                    $("#lblcusCode").html(resultData.cus_data.CusCode);
+                    $("#lblCusCode").html(resultData.cus_data.CusCode);
                     $("#lblJobNo").html(resultData.job_data.JobCardNo);
                     $("#lblregNo").html(resultData.job_data.JRegNo);
                     $("#lblnoofjobs").html(resultData.job_count.noofjobs);
@@ -592,17 +600,66 @@ $('#printArea').focus().print();
                     $("#lblNextService").html(parseFloat(resultData.job_data.OdoIn)+parseFloat(resultData.job_data.NextService));
                     
                     $("#lblSAName").html(resultData.job_data.serviceAdvisor);
-                    $("#lblTel").html(resultData.job_data.advisorContact);
+                    $("#lblCusTel").html(resultData.cus_data.MobileNo);
                     $("#lbldate").html(resultData.job_data.appoimnetDate); 
                     $("#lbldelveryDate").html((resultData.job_data.deliveryDate).substring(0, 10)); 
                     $("#lbldelveryTime").html((resultData.job_data.deliveryDate).substring(10, 19)); 
 
-                    for (var i =  0; i < resultData.job_desc.length; i++) {
-                         k=(i+1);
-                     $("#tbl_jobcard_data tbody").append("<tr><td style='text-align: center;'>" + (k) + "</td><td style='padding-left: 5px;'>" + resultData.job_desc[i].JobDescription + "</td><td>&nbsp;</td><td>&nbsp;</td></tr>");
-            
-                    }
-                    $("#tbl_jobcard_data tbody").append("<tr><td style='height:150px;'></td><td style='height:150px;'></td><td style='height:150px;'></td><td style='height:150px;'></td></tr>");
+                    
+                    $("#lblCusPModel").html(resultData.job_data.PhoneModel);
+                    $("#lblCusImei").html(resultData.job_data.EmeiNo);
+               
+
+                    $("#job_body").empty();
+var totalAmount = 0;
+
+for (var i = 0; i < resultData.job_desc.length; i++) {
+
+    k = (i + 1);
+    var amount = parseFloat(resultData.job_desc[i].JobAmount) || 0;
+    totalAmount += amount;
+
+    $("#job_body").append(
+        "<tr>" +
+            "<td style='padding:3px;text-align:center;'>" + k + "</td>" +
+            "<td style='padding:3px;text-align:left;'>" + resultData.job_desc[i].JobDescription + "</td>" +
+            "<td style='padding:3px;text-align:right;'>" + amount.toFixed(2) + "</td>" +
+        "</tr>"
+    );
+}
+
+// Space row
+$("#job_body").append("<tr><td colspan='3' style='height:20px;'></td></tr>");
+
+var advance = parseFloat(resultData.job_data.Advance) || 0;
+var balance = totalAmount - advance;
+
+// FULL AMOUNT
+$("#job_body").append(
+    "<tr style='font-weight:bold; font-size:14px; border-top:1px solid #000;'>" +
+        "<td colspan='2' style='text-align:right; padding-right:10px;'>Full Amount :</td>" +
+        "<td style='text-align:right; padding-right:5px;'>" + totalAmount.toFixed(2) + "</td>" +
+    "</tr>"
+);
+
+// ADVANCE
+$("#job_body").append(
+    "<tr style='font-weight:bold; font-size:14px; border-top:1px solid #000;'>" +
+        "<td colspan='2' style='text-align:right; padding-right:10px;'>Advance :</td>" +
+        "<td style='text-align:right; padding-right:5px;'>" + advance.toFixed(2) + "</td>" +
+    "</tr>"
+);
+
+// BALANCE
+$("#job_body").append(
+    "<tr style='font-weight:bold; font-size:14px; border-top:1px solid #000;'>" +
+        "<td colspan='2' style='text-align:right; padding-right:10px;'>Balance :</td>" +
+        "<td style='text-align:right; padding-right:5px;'>" + balance.toFixed(2) + "</td>" +
+    "</tr>"
+);
+
+
+
                     $("#btnPrint").prop('disabled',false);
                 }
             });

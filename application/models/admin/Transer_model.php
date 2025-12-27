@@ -35,12 +35,25 @@ class Transer_model extends CI_Model {
     }
     
     public function loadproductSerial($product, $q, $location) {
+ 
+     
+
          $query2 = $this->db->select('productserialstock.SerialNo')->from('product')
-                ->where('product.ProductCode', $product)
+                 ->where('product.ProductCode', $product)
                 ->where('productserialstock.Location', $location)
                 ->where('productserialstock.Quantity', 1)
                  ->like("productserialstock.SerialNo", $q ,'left')
                 ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+                ->get();
+
+    
+            
+        $query1 = $this->db->select('productserialemistock.SerialNo,productserialemistock.EmiNo')->from('product')
+                ->where('product.ProductCode', $product)
+                ->where('productserialemistock.Location', $location)
+                ->where('productserialemistock.Quantity', 1)
+                 ->like("productserialemistock.SerialNo", $q ,'left')
+                ->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode')
                 ->get();
     
             if (($query2->num_rows()) > 0) {
@@ -51,10 +64,61 @@ class Transer_model extends CI_Model {
                 }
                 return json_encode($row_set);
             } else {
-                return NULL;
+                 foreach ($query1->result_array() as $row) {
+                    $new_row['label'] = htmlentities(stripslashes($row['SerialNo']));
+                    $new_row['value'] = htmlentities(stripslashes($row['SerialNo']));
+                    $new_row['emiNo'] = htmlentities(stripslashes($row['EmiNo']));
+                    $row_set[] = $new_row;
+                }
+                return json_encode($row_set);
             }
  
     }
+
+  public function loadproductEmei($product, $q, $location)
+{
+    $query2 = $this->db->select('productimeistock.EmiNo')
+        ->from('product')
+        ->where('product.ProductCode', $product)
+        ->where('productimeistock.Location', $location)
+         ->where('productimeistock.Quantity', 1)      
+        ->like("productimeistock.EmiNo", $q, 'both')
+        ->join('productimeistock', 'productimeistock.ProductCode = product.ProductCode')
+        ->get();
+
+    // $query1 = $this->db->select('productserialemistock.SerialNo, productserialemistock.EmiNo')
+    //     ->from('product')
+    //     ->where('product.ProductCode', $product)
+    //     ->where('productserialemistock.Location', $location)
+
+    //     ->like("productserialemistock.EmiNo", $q, 'both')
+    //     ->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode')
+    //     ->get();
+
+    $row_set = [];
+
+    if ($query2->num_rows() > 0) {
+        foreach ($query2->result_array() as $row) {
+            $row_set[] = [
+                'label' => $row['EmiNo'],
+                'value' => $row['EmiNo'],
+                'emiNo' => $row['EmiNo'],
+            ];
+        }
+     
+    } else {
+        // foreach ($query1->result_array() as $row) {
+        //     $row_set[] = [
+        //         'label' => $row['SerialNo'],
+        //         'value' => $row['SerialNo'],
+        //         'emiNo' => $row['EmiNo'],
+        //     ];
+        // }
+    }
+
+    return json_encode($row_set);
+}
+
     
     public function loadpricelevel() {
         return $this->db->select()->from('pricelevel')->where('IsActive', 1)->get()->result();
@@ -63,66 +127,65 @@ class Transer_model extends CI_Model {
         return $this->db->select()->from('location')->get()->result();
     }
     
-    public function saveStockOut($grnHed,$post,$grnNo) {        
+    public function saveStockOut($grnHed,$post,$grnNo) { 
+      
         $product_codeArr = json_decode($post['product_code']);
         $unitArr = json_decode($post['unit_type']);
-//        $freeQtyArr = json_decode($post['freeQty']);
+
         $serial_noArr = json_decode($post['serial_no']);
         $qtyArr = json_decode($post['qty']);
         $sell_priceArr = json_decode($post['unit_price']);
         $cost_priceArr = json_decode($post['cost_price']);
-//        $pro_discountArr = json_decode($post['pro_discount']);
-//        $pro_discount_precentArr = json_decode($post['discount_precent']);
-//        $caseCostArr = json_decode($post['case_cost']);
         $upcArr = json_decode($post['upc']);
-//        $total_netArr = json_decode($post['total_net']);
-        $price_levelArr = json_decode($post['price_level']);
-        $totalAmountArr = json_decode($post['pro_total']);
+        //$price_levelArr = json_decode($post['price_level']);
+        $price_levelArr = 1;
+        $totalAmountArr = json_decode($post['total_net']);
         $isSerialArr = json_decode($post['isSerial']);
-        $location = $post['location'];
-        $location_to = $post['location_to'];
-        $location_from = $post['location_from'];
+        $location_to = $post['toloc'];
+        $location_from = $post['fromloc'];
         $grnDattime = date("Y-m-d H:i:s");
         
+        // echo var_dump($totalAmountArr);die;       
         $this->db->trans_start();
-        for ($i = 0; $i < count($product_codeArr); $i++) {
-//            $totalGrnQty = ($qtyArr[$i]+$freeQtyArr[$i]);
-//            $qtyPrice = $total_netArr[$i]/$qtyArr[$i];
-            $grnDtl = array(
-                'TrnsNo' => $grnNo,
-                'Location' => $location,
-                'TrnsDate' => $grnDattime,
-                'FromLocation' => $location_from,
-                'ToLocation' => $location_to,
-                'ProductCode' => $product_codeArr[$i],
-                'UnitPerCase' => $upcArr[$i],
-                'CaseOrUnit' => $unitArr[$i],
-                'TransQty' => $qtyArr[$i],
-                'DismissQty' => 0,
-                'CostPrice' => $cost_priceArr[$i],
-                'PriceLevel' => $price_levelArr[$i],
-                'SellingPrice' => $sell_priceArr[$i],
-                'TransAmount' => $totalAmountArr[$i],
-                'IsSerial' => $isSerialArr[$i],
-                'Serial' => $serial_noArr[$i]);
-            $this->db->insert('stocktransferdtl', $grnDtl);
+        // for ($i = 0; $i < count($product_codeArr); $i++) {
+
+        //     $grnDtl = array(
+        //         'TrnsNo' => $grnNo,
+        //         'Location' => $location,
+        //         'TrnsDate' => $grnDattime,
+        //         'FromLocation' => $location_from,
+        //         'ToLocation' => $location_to,
+        //         'ProductCode' => $product_codeArr[$i],
+        //         'UnitPerCase' => $upcArr[$i],
+        //         'CaseOrUnit' => $unitArr[$i],
+        //         'TransQty' => $qtyArr[$i],
+        //         'DismissQty' => 0,
+        //         'CostPrice' => $cost_priceArr[$i],
+        //         // 'PriceLevel' => $price_levelArr[$i],
+        //         'PriceLevel' =>1,
+        //         'SellingPrice' => $sell_priceArr[$i],
+        //         'TransAmount' => $totalAmountArr[$i],
+        //         'IsSerial' => $isSerialArr[$i],
+        //         'Serial' => $serial_noArr[$i]);
+        //     $this->db->insert('stocktransferdtl', $grnDtl);
         
-            //update price and product stock
-            $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location_from','$serial_noArr[$i]',0,0,0)");
-             //update serial stock
-             $this->db->query("UPDATE productserialstock AS S
-                                INNER JOIN  stocktransferdtl AS D ON S.ProductCode=D.ProductCode
-                                SET S.Quantity=0
-                                WHERE S.SerialNo = D.Serial AND D.IsSerial = 1 AND D.TrnsNo = '$grnNo' AND D.Location = '$location_from'");
+        //     //update price and product stock
+        //     //$this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location_from','$serial_noArr[$i]',0,0,0)");
+        //      //update serial stock
+        //     //  $this->db->query("UPDATE productserialstock AS S
+        //     //                     INNER JOIN  stocktransferdtl AS D ON S.ProductCode=D.ProductCode
+        //     //                     SET S.Quantity=0
+        //     //                     WHERE S.SerialNo = D.Serial AND D.IsSerial = 1 AND D.TrnsNo = '$grnNo' AND D.Location = '$location_from'");
             
             
             
             
-        }
+        // }
         
         
         
         $this->db->insert('stocktransferhed', $grnHed);
+        $error = $this->db->error();
         $this->update_max_code('Transfer Out');
 
         $this->db->trans_complete();

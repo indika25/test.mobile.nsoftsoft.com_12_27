@@ -16,13 +16,13 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="product" class="control-label">Part No <span class="required">*</span></label>
-                            <input type="text" class="form-control" value="<?php echo $product->Cus_PrdCode; ?>" required="required"  name="part_no" id="part_no" placeholder="Enter Part No">
+                            <input type="text" class="form-control" value="<?php echo $product->Cus_PrdCode; ?>" required="required"  name="part_no" id="part_no" placeholder="Enter Part No" readonly>
                         </div>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="product" class="control-label">Mercedes Part No <span class="required">*</span></label>
-                    <input type="text" class="form-control" required="required" value="<?php echo $product->OrgPartNo; ?>"  name="orgpart_no" id="orgpart_no" placeholder="Enter Mercedes Part No">
+                    <input type="text" class="form-control" required="required" value="<?php echo $product->OrgPartNo; ?>"  name="orgpart_no" id="orgpart_no" placeholder="Enter Mercedes Part No" readonly>
                 </div>
                 <div class="form-group">
                     <label for="product" class="control-label">Name <span class="required">*</span></label>
@@ -81,6 +81,15 @@
                         <div class="input-group" id="edpanel_dep1">
                             <input type="text" class="form-control pull-right" name="edep1" id="edep1">
                             <span class="input-group-btn"><button class="btn btn-primary" id="editDep1">Update</button></span>
+                        </div>
+
+                        <label for="cateogry" class="control-label">Department Discount</label>
+                        <div class="input-group" style="width: 200px;">
+                            <input class="form-control" type="int" name="depDiscount"  id="depDiscount" value="<?php echo $loaddepDis->Discount ?>" placeholder="Enter Discount percentage"/>
+                            <span class="input-group-btn">
+                                <button class="btn btn-warning" id="addDepdisbtn"><i class="fa fa-plus"></i></button>
+                                
+                            </span>
                         </div>
                     </div>
                     <div class="form-group">
@@ -198,12 +207,12 @@
                                 Is Open Price
                             </label>
                         </div>
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label for="ispromotion" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="ispromotion" value="1" <?php echo ($product->IsPromotions == 1) ? 'checked' : '' ?>> 
                                 Is Promotion
                             </label>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="col-md-4">
                         <div class="form-group">
@@ -221,47 +230,47 @@
                         <div class="form-group">
                             <label for="israwmaterial" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="israwmaterial" value="1" <?php echo ($product->IsRawMaterial == 1) ? 'checked' : '' ?>> 
-                                Is Raw Mtr
+                                Is Emi No
                             </label>
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label for="isfraction" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="isfraction" value="1" <?php echo ($product->IsFraction == 1) ? 'checked' : '' ?>> 
                                 Is Fraction
                             </label>
-                        </div>
-                        <div class="form-group">
+                        </div> -->
+                        <!-- <div class="form-group">
                             <label for="isfreeissue" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="isfreeissue" value="1" <?php echo ($product->IsFreeIssue == 1) ? 'checked' : '' ?>> 
                                 Is Free Issue
                             </label>
-                        </div>
-                        <div class="form-group">
+                        </div> -->
+                        <!-- <div class="form-group">
                             <label for="isfreeissue" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="isvat" value="1" <?php echo ($product->IsTax == 1) ? 'checked' : '' ?>> 
                                 Is VAT
                             </label>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-4">
-                        <div class="form-group">
+                        <!-- <div class="form-group">
                             <label for="isfraction" class="control-label">
                                 <input class="prd_icheck" type="checkbox" name="isnbt" id="isnbt" value="1" <?php echo ($product->IsNbt == 1) ? 'checked' : '' ?>> 
                                 Is NBT
                             </label>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="col-md-4">
-                        <div class="form-group" id="nbtratioDiv">
+                        <!-- <div class="form-group" id="nbtratioDiv">
                             <label for="isfreeissue" class="control-label">
                                     NBT Ratio
                             </label>
                             <input class="form-control input-sm" type="text" id="nbtratio" name="nbtratio" value="<?php echo ($product->NbtRatio); ?>"> 
-                        </div>
+                        </div> -->
                     </div>
                     <div class="col-md-4"> </div>
                 </div>
@@ -331,7 +340,9 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="costprice" class="control-label">Cost Price<span class="required">*</span></label>
+                                <?php if (in_array("SM135", $blockView) || $blockView == null) { ?>
                                 <input type="text" class="form-control"  name="costprice" id="costprice" value="<?php echo $product->Prd_CostPrice; ?>">
+                                <?php } ?>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -341,6 +352,15 @@
                                 <input type="text" class="form-control"  name="setaprice" id="setaprice" value="<?php echo $product->Prd_SetAPrice; ?>">
                             </div>
                         </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="productCode" class="control-label">Branch Cost Price<span class="required">*</span></label>
+                                <input type="text" class="form-control" required="required" min="0" value="<?php echo $product->branchCost; ?>" name="branchCostprice" id="branchCostprice">
+                            </div>
+                        </div>
+
                     </div>
                     <div class="form-group">
                         <label for="pricelevel" class="control-label">Price level <span class="required">*</span></label>
@@ -376,6 +396,37 @@
                         </table>
                         <?php // print_r($productpl); ?>
                     </div>
+                </div>
+                <br/>
+                <div class="pricelevelChangearea">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="costprice" class="control-label">Select Selling Price Level</label>
+                                <select class="form-control"  name="pricestock" id="pricestock">
+                                    <option value="0">-Select Selling Price Level-</option>
+                                    <?php foreach ($productStockpls AS $productStockpl) { ?>
+                                        <option value="<?php echo $productStockpl->Price ?>"><?php echo $productStockpl->Price ?></option>
+                                    <?php } ?>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="averagecost" class="control-label">Replace Selling Price</label>
+                                <input type="text" class="form-control"  name="newpricestock" id="newpricestock"  value="">
+                            </div>
+
+                             <div class="form-group">
+                                <label for="averagecost" class="control-label">Replace Wholesale Price</label>
+                                <input type="text" class="form-control"  name="newwholeprice" id="newwholeprice"  value="">
+                            </div>
+                            <div class="form-group">
+                                <button type="button"  name="setStockprice" id="setStockprice">Change </button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                   
                 </div>
 
                 <div class="form-group">
@@ -1204,5 +1255,79 @@
         $("#loc_array").val(JSON.stringify(loc_array));
         $("#rack_array").val(JSON.stringify(rack_array));
         $("#bin_array").val(JSON.stringify(bin_array));
+    });
+
+    $('#addDepdisbtn').click(function(e) {
+        e.preventDefault(); 
+
+        var department = $("#department").val();
+        var depDiscount = $("#depDiscount").val();
+
+        if (department === "0" || department === "" || department === null) {
+   
+            $.notify("Please select a department.", "warning");
+            $("#department").focus();
+            return false;
+        }
+
+        if (depDiscount === "0" || depDiscount === "" || depDiscount === null) {
+   
+            $.notify("Please Enter Valid Discount.", "warning");
+            $("#depDiscount").focus();
+            return false;
+        }
+        $.ajax({
+                type: "post",
+                url: "<?php echo base_url(); ?>" + "admin/master/depDiscount",
+                data: {department:department,depDiscount:depDiscount},
+                success: function (json) {
+                    var resultData = JSON.parse(json);
+                     if (resultData.fb === true) {
+                        $.notify(resultData.msg, "success");
+                    } else {
+                        $.notify(resultData.msg, "error");
+                    }
+                },
+                error: function () {
+                    alert('Error while request..');
+                }
+            });
+        e.preventDefault();
+    });
+
+    $('#setStockprice').on('click', function () {
+        let productCode = $('#productCode').val();
+        let costprice = $('#costprice').val();
+        let oldPrice = $('#pricestock').val();
+            
+        let newPrice = $('#newpricestock').val();
+        let newwholeprice = $('#newwholeprice').val();
+        
+
+        if(newPrice !== ''){
+            if (costprice > newPrice) {
+                $.notify("Please Enter price level morethan costprice.","warning");
+                return;
+            }
+        }
+         
+
+        $.ajax({
+            url: "<?php echo base_url('admin/product/updatenewsellingprice/') ?>", 
+            type: "POST",
+            data: {
+                productCode: productCode,
+                old_price: oldPrice,
+                new_price: newPrice,
+                newwholeprice:newwholeprice
+            },
+            success: function (response) {
+                $.notify('Price updated successfully.',"success"); 
+                window.location.reload();
+            },
+            error: function () {
+                 $.notify('Something went wrong while updating the price.',"warning");
+            }
+        });
     });
 </script>

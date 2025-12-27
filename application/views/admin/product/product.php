@@ -29,11 +29,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                         <table class="table table-bordered" id="producttbl">
                             <thead>
                                 <tr>
-                                    <!--<td>Pro. Code</td>-->
+                                    <td>Pro. Code</td>
                                     <td>Name</td>
                                     <td>Appear Name</td>
+                                    <?php if (in_array("SM135", $blockView) || $blockView == null) { ?>
                                     <td>Cost Price</td>
-                                    <td>Selling Price</td>
+                                    <?php } ?>
+                                    <td>Set Price</td>
+                                    <td>Retail Price</td>
+                                    <td>Wholesale Price</td>
                                     <td>###</td>
                                 </tr>
                             </thead>
@@ -61,7 +65,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         var producttbl = $('#producttbl').dataTable({
             "processing": true,
             "serverSide": true,
-            "order": [[1, "desc"]],
+            "order": [[0, "desc"]],
             "language": {
                 "processing": "<div class='overlay'><i class='fa fa-refresh fa-spin'></i></div>"
             },
@@ -71,11 +75,15 @@ defined('BASEPATH') OR exit('No direct script access allowed');
             },
             "columns":
                     [
-                        
+                        {"data": "ProductCode"},
                         {"data": "Prd_Description"},
                         {"data": "Prd_AppearName"},
+                        <?php if (in_array("SM135", $blockView) || $blockView == null) { ?>
                         {"data": "Prd_CostPrice", searchable: false},
-                        {"data": "ProductPrice", searchable: false},
+                        <?php } ?>
+                        {"data": "Prd_SetAPrice", searchable: false},
+                        {"data": "retail_price", searchable: false},
+                        {"data": "wholesale_price", searchable: false},
                         {
                             <?php if (in_array("M6", $blockEdit) || $blockEdit == null) { ?>
                             "data": null, orderable: false, searchable: false,
@@ -98,9 +106,12 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         });
     }
     function editp(id) {
-        console.log(id);
+      
         $('.modal-content').load('<?php echo base_url() ?>admin/product/loadmodal_editproduct/', {id: id}, function (result) {
+          
             $('#productmodal').modal({show: true,backdrop: 'static', keyboard: false});
         });
     }
+
+    
 </script>

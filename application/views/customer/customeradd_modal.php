@@ -37,7 +37,7 @@
                     </div></div>
                     <div class="col-md-9"><div class="form-group">
                     <label for="cusName">Customer Name </label>
-                    <input type="text" required="required" value="<?php echo urldecode($q); ?>" class="form-control" name="cusName" id="cusName" placeholder="Ex: Kamal Jayasinghe">
+                    <input type="text" onkeydown="return /[a-zA-Z0\s]/i.test(event.key)" required="required" value="<?php echo urldecode($q); ?>" class="form-control" name="cusName" id="cusName" placeholder="Ex: Kamal Jayasinghe">
                     </div></div>
                     
                 </div>

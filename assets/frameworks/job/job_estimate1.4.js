@@ -15,6 +15,8 @@ $(document).ready(function() {
     $("#spartDiv").hide();
     $("#estimate_head").hide();
     $("#general_head").hide();
+     $("#jobPrDiv").hide();
+      $("#stockSec").hide();
     var cusCode = 0;
     var jobNo = 0;
     var paymentNo = 0;
@@ -338,26 +340,36 @@ var isJobNbtRatio=0;
         isJobVat = parseFloat($("#workType option:selected").attr('isVat'));
         isJobNbt = parseFloat($("#workType option:selected").attr('isNbt'));
         isJobNbtRatio = parseFloat($("#workType option:selected").attr('nbtRatio'));
-
+        
         if (workType == 1) {
             $("#spartDiv").hide();
             $("#jobDescDiv").show();
+            $("#jobPrDiv").hide();
+            $("#stockSec").hide();
             $("#partType").prop("disabled",true);
         } else if (workType == 2) {
             $("#spartDiv").show();
             $("#jobDescDiv").hide();
+            $("#jobPrDiv").show();
+            $("#stockSec").show();
             $("#partType").prop("disabled",false);
         } else if (workType == 3) {
             $("#spartDiv").hide();
             $("#jobDescDiv").show();
+            $("#jobPrDiv").hide();
+             $("#stockSec").hide();
             $("#partType").prop("disabled",false);
         }else if (workType == 9) {
             $("#spartDiv").hide();
+            $("#jobPrDiv").hide();
+             $("#stockSec").hide();
             $("#jobDescDiv").show();
             $("#partType").prop("disabled",false);
         } else {
             $("#jobDescDiv").show();
+            $("#jobPrDiv").hide();
             $("#spartDiv").hide();
+            $("#stockSec").hide();
             $("#partType").prop("disabled",true);
         }
     });
@@ -386,6 +398,8 @@ var partType = '';
     // var k=0;
     // ADD job descriptions
     $("#addJob").click(function() {
+        $("#stock").val();
+        $("#pricestock").val();
         var jobdesc = $("#jobdesc").val();
         // var val2 = $("#jobdesc2 option:selected").val();
         var workTypes = $("#workType option:selected").html();
@@ -403,6 +417,19 @@ var partType = '';
         var isNewVat = $("input[name='isProVat']:checked").val();
         var isNewNbt = $("input[name='isProNbt']:checked").val();
         var newNbtRatio = parseFloat($("#proNbtRatio").val());
+        var priceLevel = $('#psLevel').val();
+
+          var qty = parseFloat($("#qty").val()).toFixed(3);
+   
+        if (workId == 2) {
+            var Stock = parseFloat($("#stock").val());
+            var priceStock = parseFloat($("#pricestock").val());
+            
+            if (qty > priceStock) {  
+                $.notify("You can't add more than the available stock.", "warning");  
+                return false;
+            }
+        }
 
         if(isNaN(qty) == true){
             $.notify("Qty can not be empty.", "warning");return false;
@@ -446,10 +473,21 @@ var partType = '';
                         proNbt=addProductNbt((totalPrice),isNewVat,isNewNbt,newNbtRatio) ;
                         netprice +=proVat ;
                         netprice +=proNbt ;
-                        $("#tbl_job tbody").append("<tr partType='"+partType+"' totalPrice='"+totalPrice+"' isvat='"+isNewVat+"' isnbt='"+isNewNbt+"' nbtRatio='"+newNbtRatio+"' proVat='"+proVat+"' proNbt='"+proNbt+"' job='" + proName + "' jobid='" + workId + "' qty='" + qty + "' jobOrder='" + workOrder + "' netprice='" + netprice + "'  sellprice='" + sellPrice + "'  isIns='" + isInsurance + "' insurance='" + insurance + "' work_id='" + proCode + "' timestamp='" + timestamp + "'><td>" + k + "</td><td work_id='" + workId + "'>" + workTypes + "</td><td>" + proName + "</td><td>" + accounting.formatNumber(qty) + "</td><td>" + accounting.formatNumber(sellPrice) + "</td><td>" + accounting.formatNumber(netprice) + "</td><td>" + insurance + "</td><td>&nbsp;<i class='glyphicon glyphicon-edit edit btn btn-info btn-xs'></i>&nbsp;<i class='remove btn btn-danger btn-xs glyphicon glyphicon-remove-circle'></i></td></tr>");
+                        $("#tbl_job tbody").append("<tr partType='"+partType+"' totalPrice='"+totalPrice+"' isvat='"+isNewVat+"' isnbt='"+isNewNbt+"' nbtRatio='"+newNbtRatio+"' proVat='"+proVat+"' proNbt='"+proNbt+"' job='" + proName + "' jobid='" + workId + "' qty='" + qty + "' jobOrder='" + workOrder + "' netprice='" + netprice + "'  sellprice='" + sellPrice + "'  isIns='" + isInsurance + "' insurance='" + insurance + "' work_id='" + proCode + "' timestamp='" + timestamp +
+                             "' priceLevel='" + priceLevel + "'><td>" + k + 
+                             "</td><td work_id='" + workId + "'>" + workTypes +
+                              "</td><td>" + proName + 
+                              "</td><td>" + accounting.formatNumber(qty) + 
+                              "</td><td>" + accounting.formatNumber(sellPrice) + 
+                              "</td><td>" + accounting.formatNumber(netprice) + 
+                              "<td style='display: none;'>" + accounting.formatNumber(priceLevel) +
+                              "</td><td>" + insurance + "</td><td>&nbsp;<i class='glyphicon glyphicon-edit edit btn btn-info btn-xs'></i>&nbsp;<i class='remove btn btn-danger btn-xs glyphicon glyphicon-remove-circle'></i></td></tr>");
                         if (proCode != 0 || proCode != '') { proCodeArr.push(proCode); }
                         $("#prdName").val('');
                         $("#product").val('');
+                        $("#stock").text('');
+                        $("#pricestock").text('');
+                        $("#psLevel").val('');
                         if (isInsurance == 1) {
 
                         } else {
@@ -631,40 +669,79 @@ var partType = '';
         }
     });
 
+    // this function connected to addsale invoice/ estimate / job invoice // stock tranfer out
     $("#product").autocomplete({
-        source: function(request, response) {
-            $.ajax({
-                url: '../job/loadproductjson',
-                dataType: "json",
-                data: {
-                    q: request.term,
-                    type: 'getActiveProductCodes',
-                    row_num: 1,
-                    action: "getActiveProductCodes",
-                    price_level: 1
-                },
-                success: function(data) {
-                    response($.map(data, function(item) {
-                        return {
-                            label: item.label,
-                            value: item.value,
-                            data: item
-                        }
-                    }));
-                }
-            });
-        },
+         source: function(request, response) {
+                var priceLevel = $('#psLevel').val();
+
+                if(priceLevel == 1){
+                        $.ajax({
+                            url: baseUrl+'/Salesinvoice/loadproductjson',
+                            dataType: "json",
+                            data: {
+                                q: request.term,
+                                type: 'getActiveProductCodes',
+                            
+                            
+                                row_num: 1,
+                                action: "getActiveProductCodes",
+                                price_level: price_level,
+                                isGrn:0
+                            },
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        label: item.label,
+                                        value: item.value,
+                                        price: item.price
+                                    }
+                                }));
+                            }
+                        });
+                    } else{
+                    $.ajax({
+                            url: baseUrl+'/Salesinvoice/loadwholesalepriceproductjson',
+                            dataType: "json",
+                            data: {
+                                q: request.term,
+                                type: 'getActiveProductCodes',
+                            
+                            
+                                row_num: 1,
+                                action: "getActiveProductCodes",
+                                price_level: price_level,
+                                isGrn:0
+                            },
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        label: item.label,
+                                        value: item.value,
+                                        price: item.price
+                                    }
+                                }));
+                            }
+                        });
+                    }
+            },
         autoFocus: true,
         minLength: 0,
         select: function(event, ui) {
             itemCode = ui.item.value;
+            var price = ui.item.price;
+            var price_level = $('#psLevel').val();
+            var loc = $('#location').val(); 
             $.ajax({
                 type: "post",
                 url: "../Product/getProductByIdforGrn",
-                data: { proCode: itemCode, prlevel: price_level, location: loc },
+                 data: { proCode: itemCode, prlevel: price_level, location: loc,price:price },
                 success: function(json) {
                     var resultData = JSON.parse(json);
                     if (resultData) {
+                        $("#stock").html(resultData.product.stock);
+                        $("#pricestock").html(resultData.price_stock.Stock);
+                        $("#stock").val(resultData.product.stock);
+                        $("#pricestock").val(resultData.price_stock.Stock);
                         // $.each(resultData.serial, function(key, value) {
                         //     var serialNoArrIndex1 = $.inArray(value, serialnoarr);
                         //     if (serialNoArrIndex1 < 0) {
@@ -993,7 +1070,7 @@ var proNbt=0;
     function clearProductData() {
         var workId =$("#workType option:selected").val();
         if(workId==2){
-$("#product").focus();
+        $("#product").focus();
         }else{
              $("#jobdesc").focus();
         }
@@ -1005,6 +1082,8 @@ $("#product").focus();
         $('#isInsurance').iCheck('uncheck');
         $("#insurancer").val('');
         $("#partType").val('');
+        $("#stock").val('');
+        $("#pricestock").val('');
 
         proName = 0;
         proCode = 0;
@@ -1426,7 +1505,7 @@ function getKey(txt){
         var nbtratio = $(this).parent().parent().attr('nbtRatio');
         var proVat = $(this).parent().parent().attr('proVat');
         var proNbt = $(this).parent().parent().attr('proNbt');
-
+        var priceLevel = $(this).parent().parent().attr('priceLevel');
         var r = confirm('Do you want to edit this row ?');
         if (r === true) {
 
@@ -1441,6 +1520,7 @@ function getKey(txt){
             $("#timestamp").val(timestamp);
             $("#proNbtRatio").val(nbtratio);
             $("#partType").val(partType);
+             $("#psLevel").val(priceLevel);
             itemCode=workid;
 
             var jobType  = $("#jobType").val();

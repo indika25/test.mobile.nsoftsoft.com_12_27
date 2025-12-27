@@ -119,6 +119,7 @@ class Cash extends Admin_Controller {
             // $last_date = date('Y-m-d', strtotime($date. ' - 1 days'));
 
             $isend = $this->db->select('ID')->from('cashierbalancesheet')->where('DATE(BalanceDate)' ,$date)->get()->num_rows();
+           
             if($isend>0){
                 $query = $this->db->query("CALL SPR_CASH_BALANCE_SHEET('$date','$location','$user')");
                 $result =$query->result_array();

@@ -72,13 +72,14 @@ class Grn extends Admin_Controller {
         $this->data['breadcrumb'] = $this->breadcrumbs->show();
         $this->data['plv'] = $this->Grn_model->loadpricelevel();
         $this->data['location'] = $this->Grn_model->loadlocations();
-        $people = array("1", "3", "13");
+        // $people = array("1", "3", "13");
         
-        if (in_array($_SESSION['user_id'], $people)) {
-            $this->template->admin_render('admin/grn/add_grn', $this->data);
-        }else{
-           redirect('admin/dashboard'); 
-        }
+         $this->template->admin_render('admin/grn/add_grn', $this->data);
+        // if (in_array($_SESSION['user_id'], $people)) {
+           
+        // }else{
+        //   redirect('admin/dashboard'); 
+        // }
     }
 
     public function loadallgrns() {
@@ -94,10 +95,13 @@ class Grn extends Admin_Controller {
         die;
     }
     
-    public function loadproductjson() {
+    public function loadproductjsonGrn() {
         $query = $_GET['q'];
-        $sup= $_REQUEST['sup'];$supCode= $_REQUEST['supcode'];
-        echo $this->Grn_model->loadproductjson($query,$sup,$supCode);
+        $sup= $_REQUEST['sup'];
+        $supCode= $_REQUEST['supcode'];
+        // $pLevel = $_GET['price_level'];
+       
+        echo $this->Grn_model->loadproductjsonGrn($query,$sup,$supCode);
         die;
     }
     
@@ -105,7 +109,7 @@ class Grn extends Admin_Controller {
         $barcode = 1;
         $serialAutoGen=$_POST['serialAutoGen'];
         $maxSerialQty=$_POST['maxSerialQty'];
-//        var_dump($_POST);die;
+        //0 echo var_dump($maxSerialQty);die;
 //        $this->load->model('admin/Grn_model');
         $grnNo = $this->Grn_model->get_max_code('Goods Received Note');
         $invNo = $_POST['invoicenumber'];
@@ -141,6 +145,9 @@ class Grn extends Admin_Controller {
         $price_levelArr = json_decode($_POST['price_level']);
         $totalAmountArr = json_decode($_POST['pro_total']);
         $pro_nameArr = json_decode($_POST['proName']);
+        $sendwholesales_priceArr = json_decode($_POST['sendwholesales_price']);
+        $sendisemiNo_Arr = json_decode($_POST['sendisemiNo']);
+        $sendemiNo_Arr = json_decode($_POST['sendemiNo']);
         
         $grnHed = array(
             'AppNo' => '1','GRN_No' => $grnNo,'GRN_PONo'=>'','GRN_Location' => $location,'GRN_Date' => $invDate,'GRN_DateORG' => $grnDattime,
@@ -372,12 +379,92 @@ class Grn extends Admin_Controller {
         echo json_encode($result);die;
     }
 
-    public function updateStock()
-    {
-        $productId =$_POST['id'];
-        $stockChange =$_POST['stockChange'];
-//var_dump($productId,$stockChange);
-       $sql = $this->db->update('productstock',array('Stock'=>$stockChange),array('ProductCode'=>$productId,'Location'=>1));
-//        die();
+ public function getEmeiStocktoProduct()
+{
+    ob_clean(); // clear ALL output buffer
+
+    $emei    = trim($this->input->post('emei'));
+    $product = trim($this->input->post('product'));
+
+    $result = $this->Grn_model->getEmeiStocktoProduct($emei, $product);
+
+    header('Content-Type: application/json');
+
+    if ($result) {
+        echo json_encode([
+            'status' => true,
+            'quantity' => $result->Quantity
+        ]);
+    } else {
+        echo json_encode([
+            'status' => false
+        ]);
     }
+
+    exit;
+}
+
+
+
+
+
+ public function updateStock()
+{
+    $productId   = $this->input->post('id', true);         
+    $stockChange = $this->input->post('stockChange', true);
+    $emeiNo      = $this->input->post('emeiNo', true);
+    $price       = $this->input->post('price', true);
+    $price       = ($price === null || $price === '') ? 0 : $price;
+
+    if (!$productId || !is_numeric($stockChange)) {
+        return $this->output
+            ->set_content_type('application/json')
+            ->set_output(json_encode(['status' => false, 'message' => 'Invalid input']));
+    }
+
+    if ($emeiNo) {
+        $this->db->where(['ProductCode' => $productId, 'Location' => 1, 'EmiNo' => $emeiNo]);
+        $this->db->update('productimeistock', ['Quantity' => $stockChange]);
+    }
+
+    $this->db->where(['ProductCode' => $productId, 'Location' => 1]);
+    $this->db->update('productstock', ['Stock' => $stockChange]);
+
+    $this->db->where([
+        'PSCode'       => $productId,
+        'PSLocation'   => 1,
+        'PSPriceLevel' => 1,
+        'Price'        => $price
+    ]);
+    $this->db->update('pricestock', ['Stock' => $stockChange]);
+
+    return $this->output
+        ->set_content_type('application/json')
+        ->set_output(json_encode(['status' => true, 'message' => 'Stock updated successfully']));
+}
+
+
+
+    public function check_emi_no(){
+        $emiNo = $this->input->post('emiNo');
+        
+        
+        if (!$emiNo) {
+            echo json_encode(['exists' => false]);
+            return;
+        }
+
+        $existsInEmi = $this->db->where('EmiNo', $emiNo)
+                                ->limit(1)
+                                ->get('productserialemistock')
+                                ->num_rows() > 0;
+
+        $existsInSerial = $this->db->where('EmiNo', $emiNo)
+                                ->limit(1)
+                                ->get('productimeistock')
+                                ->num_rows() > 0;
+
+        echo json_encode(['exists' => ($existsInEmi || $existsInSerial)]);die;
+    }
+
 }

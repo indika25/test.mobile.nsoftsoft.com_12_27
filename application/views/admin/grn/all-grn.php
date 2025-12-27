@@ -78,7 +78,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                         if(row.GRN_IsCancel==0){
                         return '<a href="view_grn/' + Base64.encode(row.GRN_No) +'" class="btn btn-xs btn-primary" >View</a> &nbsp;';
                         }else{
-                            return '<a href="#" disabled class="btn btn-xs btn-primary" >View</a> &nbsp;';
+                           return '<a href="view_grn/' + Base64.encode(row.GRN_No) +'" class="btn btn-xs btn-primary" >View</a> &nbsp;';
                         }
                     }
                 }

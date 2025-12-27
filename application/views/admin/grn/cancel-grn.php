@@ -25,7 +25,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                             <div class="col-md-6">
 
                                 <div class="form-group">
-                                    <label for="customer" class="col-sm-5 control-label">Grn No <span class="required">*</span></label>
+                                    <label for="customer" class="col-sm-5 control-label">Grn No<span class="required">*</span></label>
                                     <div class="col-sm-6">
                                         <input type="text" class="form-control" required="required"  name="invoice" id="invoice" placeholder="Enter GRN number">
                                     </div>
@@ -78,6 +78,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                         <th>Product Code</th>
                                         <th>Product Name</th>
                                         <th>Serial No</th>
+                                        <th>Emi No</th>
                                         <th>Total Quantity</th>
                                         <th>Free Qty</th>
                                         <th>Selling Price</th>

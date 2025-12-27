@@ -455,7 +455,7 @@ class Salesinvoice_model extends CI_Model {
                                 $selp = $row['SalesUnitPrice'];
 
                             //update price stock
-                           $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
+                           $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','1','$costp','$selp','$loc')");
 
                             //update product stock
                            $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')"); 

@@ -2039,6 +2039,63 @@ public function editBankAccount() {
         echo json_encode($data);
         die();
     }
+
+    public function depDiscount() {
+        $department  = $this->input->post('department');
+        $depDiscount = $this->input->post('depDiscount');
+
+       
+        if (empty($department) || $department == '0' || $depDiscount === '') {
+            echo json_encode(['fb' => false, 'msg' => 'Invalid input data']);
+            return;
+        }
+
+       
+        $updateData = ['Discount' => $depDiscount];
+        
+        $this->db->where('DepCode', $department);
+        $res = $this->db->update('department', $updateData);
+
+       
+        if ($res) {
+            $data['fb']  = true;
+            $data['msg'] = 'Department discount updated successfully.';
+        } else {
+            $data['fb']  = false;
+            $data['msg'] = 'Failed to update department discount.';
+        }
+
+        echo json_encode($data);
+        die();
+    }
+
+
+    
+    public function getDepDiscount()
+    {
+        $department = $this->input->post('department');
+
+        if (empty($department)) {
+            echo json_encode(['fb' => false, 'msg' => 'Invalid department']);
+            return;
+        }
+
+        $query = $this->db->get_where('department', ['DepCode' => $department]);
+        $row = $query->row();
+
+        if ($row && isset($row->Discount)) {
+            echo json_encode([
+                'fb' => true,
+                'discount' => $row->Discount,
+                'msg' => 'Discount found'
+            ]);
+        } else {
+            echo json_encode(['fb' => false, 'msg' => 'No discount set']);
+        }
+        die;
+    }
+
+    
 }
 
 

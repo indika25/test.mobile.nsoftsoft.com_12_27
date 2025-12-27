@@ -85,15 +85,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                         <input type="hidden" tabindex="6"  min="0" step="200" name="additional" value="0" id="additional" class="form-control" />
                                     </div>
                                 </div> -->
-                                <div class="form-group">
-                                        <label class="col-sm-4 control-label">Price Level</label>  
-                                        <div class="col-sm-6">
-                                            <select tabindex="7" class="form-control" id="priceLevel"> 
-                                             <?php foreach ($plv as $pl) { ?>
-                                            <option value="<?php echo $pl->PL_No; ?>" <?php if ($pl->PL_No == 1) {echo 'selected';}?>><?php echo $pl->PriceLevel; ?></option>
-                                            <?php } ?></select>
-                                        </div>
-                                    </div> 
+                                
                             </form>
                         </div>
                         <div  class="col-md-3">
@@ -194,6 +186,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="hidden" class="form-control" required="required"  name="batchCode" id="batchCode">
                                                 <input type="hidden" class="form-control" required="required"  name="upc" id="upc">
                                                 <input type="hidden" class="form-control" required="required"  name="isSerial" id="isSerial">
+                                                <input type="hidden" class="form-control" required="required" name="isEmi" id="isEmi">
                                             </div>
                                             <div class="col-sm-1"><input class="prd_icheck" type="checkbox" name="isZero" id="isZero" value='1'></div>
                                         </div>
@@ -204,6 +197,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="hidden" tabindex="14" class="form-control" required="required"  name="serialQty" id="serialQty"  value="0">
                                             </div>
                                         </div>
+
+                                         <div class="form-group" id="emiDiv"> 
+                                             <label for="sellingPrice"class="col-sm-4 control-label">Emi No <span class="required">*</span></label>
+                                             <div class="col-sm-6">
+                                                 <input type="text"  tabindex="13"  min="0" step="1" class="form-control" name="emiNo" id="emiNo" readonly>
+                                                 
+                                             </div>
+                                         </div>
                                         
                                     </div>
                                     <div class="form-group">
@@ -228,6 +229,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                             <th>Selling Price</th>
                                             <th>Total Net Amount</th>
                                             <th>Serial</th>
+                                            <th>EMEI No</th>
                                             <th></th>
                                         </tr>
                                     </thead>

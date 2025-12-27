@@ -37,12 +37,16 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                     </div>
                                 </div>
                                 <table class="table">
-                                    <tr><td colspan="3" id="result"><span></span></td></tr>
+                                    <!-- <tr><td colspan="3" id="result"><span></span></td></tr> -->
                                     <tr><td>Stock</td><td>:</td><td class="text-left" id="stock"></td></tr>
                                     <tr><td>Model</td><td>:</td><td class="text-left" id="model"></td></tr>
                                     <tr><td>Product Code</td><td>:</td><td class="text-left" id="productCode"></td></tr>
                                     <tr><td>Serial</td><td>:</td><td class="text-left"  id="serial"></td></tr>
+                                    <tr><td>Iemi</td><td>:</td><td class="text-left"  id="emino"></td></tr>
+                                    <tr><td>Quantity</td><td>:</td><td class="text-left"  id="quantity"></td></tr>
+                                    <?php if (in_array("SM135", $blockView) || $blockView == null) { ?>
                                 <tr><td>Cost Price</td><td>:</td><td class="text-left"  id="costPrice"></td></tr> 
+                                <?php } ?>
                                 <tr><td>Selling Price</td><td>:</td><td class="text-left"  id="sellingPrice"></td></tr> 
                                  <tr><td>Location</td><td>:</td><td class="text-left"  id="shop"></td></tr>
                                  <tr><td>supplier</td><td>:</td><td class="text-left"  id="sup"></td></tr>
@@ -78,8 +82,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                     <tr><td>Invoice No</td><td>:</td><td class="text-left" id="invNo"></td></tr>
                                     <tr><td>Invoice Date</td><td>:</td><td class="text-left" id="invDate"></td></tr>
                                     <tr><td>Location</td><td>:</td><td class="text-left"  id="invShop"></td></tr>
-                                    
+                                    <?php if (in_array("SM135", $blockView) || $blockView == null) { ?>
                                 <tr><td>Cost Price</td><td>:</td><td class="text-left"  id="invCostPrice"></td></tr> 
+                                <?php } ?>
                                 <tr><td>Selling Price</td><td>:</td><td class="text-left"  id="invSellingPrice"></td></tr> 
                                  <tr><td>Inv Amount</td><td>:</td><td class="text-left"  id="invAmount"></td></tr>
                                  <tr><td>Discount</td><td>:</td><td class="text-left"  id="discount"></td></tr>

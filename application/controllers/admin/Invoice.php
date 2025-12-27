@@ -217,6 +217,9 @@ class Invoice extends Admin_Controller {
         $price_levelArr = json_decode($_POST['price_level']);
         $totalAmountArr = json_decode($_POST['pro_total']);
         $pro_nameArr = json_decode($_POST['proName']);
+        $emenoArr = json_decode($_POST['emeiNo']);
+        
+
         $invDate = date("Y-m-d H:i:s");
         
         $retHed = array(
@@ -244,9 +247,31 @@ class Invoice extends Admin_Controller {
             'InvDate' => $invDate
         );
 
-//        var_dump($res2);die();
+
         $return['fb'] = $res2;
         echo json_encode($return);
+        die;
+    }
+
+ public function loadproductEmei() {
+        $q = $_GET['q'];
+        $product= $_REQUEST['proCode'];
+        $location= $_REQUEST['location'];
+        $invno= $_REQUEST['inv'];
+        
+        echo $this->Invoice_model->loadproductEmei($product, $q, $location,$invno);
+        die;
+    }
+
+
+   public function loadproductSerial() {
+        $q = $_GET['q'];
+        $product= $_REQUEST['proCode'];
+        $location= $_REQUEST['location'];
+        $invNo= $_REQUEST['InvNo'];
+
+        
+        echo $this->Invoice_model->loadproductSerial($product, $q, $location,$invNo);
         die;
     }
 

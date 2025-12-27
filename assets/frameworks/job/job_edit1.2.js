@@ -294,15 +294,15 @@ $(document).ready(function() {
                     $("#cusAddress2").html(resultData.cus_data.Address03);
                     $("#cusPhone").html(resultData.cus_data.MobileNo);
 
-                    $("#contactName").html(resultData.vehicle_data.contactName);
-                    $("#registerNo").html(resultData.vehicle_data.RegNo);
-                    $("#make").html(resultData.vehicle_data.make);
-                    $("#model").html(resultData.vehicle_data.model);
-                    $("#fuel").html(resultData.vehicle_data.fuel_type);
-                    $("#chassi").html(resultData.vehicle_data.ChassisNo);
-                    $("#engNo").html(resultData.vehicle_data.EngineNo);
-                    $("#yom").html(resultData.vehicle_data.ManufactureYear);
-                    $("#color").html(resultData.vehicle_data.body_color);
+                    // $("#contactName").html(resultData.vehicle_data.contactName);
+                    // $("#registerNo").html(resultData.vehicle_data.RegNo);
+                    // $("#make").html(resultData.vehicle_data.make);
+                    // $("#model").html(resultData.vehicle_data.model);
+                    // $("#fuel").html(resultData.vehicle_data.fuel_type);
+                    // $("#chassi").html(resultData.vehicle_data.ChassisNo);
+                    // $("#engNo").html(resultData.vehicle_data.EngineNo);
+                    // $("#yom").html(resultData.vehicle_data.ManufactureYear);
+                    // $("#color").html(resultData.vehicle_data.body_color);
 
                     $("#cusCode").val(resultData.cus_data.CusCode);
                     $("#vehicleNo").val(resultData.job_data.JRegNo);
@@ -460,8 +460,7 @@ loadInvoicetoPrint(jobNo);
                 dataType: "json",
                 data: {
                     q: request.term,
-                    cusCode:cusCode,
-                    regNo:regNo
+                    cusCode:cusCode
                 },
                 success: function(data) {
                     response($.map(data, function(item) {
@@ -491,27 +490,64 @@ loadInvoicetoPrint(jobNo);
     var jobNumArr = [];
     var removeJob = 0;
     var removeCat = 0;
+      var jobAmountArr = []; // <-- add this at the top with other arrays
+
     var val2 =0;
     var jobcat =0;
     // ADD job descriptions
-    $("#btnAdd").click(function() {
-      var jobdesc = $("#jobdesc").val();
-      jobcat = $("#jobcategory option:selected").val();
-      var jobcategory = $("#jobcategory option:selected").html();
-       
-        if (jobdesc) {
-            jobArr.push(jobdesc);
-            jobNumArr.push(val2);
-            jobcatArr.push(jobcat);
-            $("#jobArr").val(JSON.stringify(jobArr));
-            $("#jobNumArr").val(JSON.stringify(jobNumArr));
-            $("#jobCatArr").val(JSON.stringify(jobcatArr));
-            $("#tbl_payment tbody").append("<tr job='" + jobdesc + "'  jobid='" + val2 + "' jobcat='" + jobcat + "'  jobcategory='" + jobcategory + "'><td>" + k + "</td><td></td><td>" + jobdesc + "</td><td><span  class='remove btn btn-danger btn-xs'>Remove</span></td></tr>");
-            k++;
-            $("#jobdesc").val('');$("#jobdesc2").val('');
-            val2=0;
-        }
-    });
+   $("#btnAdd").click(function () {
+    var jobdesc = $("#jobdesc").val();
+    var jobamount = $("#jobamount").val();
+
+    jobcat = $("#jobcategory option:selected").val();
+    var jobcategory = $("#jobcategory option:selected").html();
+
+    if (jobdesc) {
+      jobArr.push(jobdesc);
+      jobNumArr.push(val2);
+      jobcatArr.push(1);
+      jobAmountArr.push(jobamount);
+
+      $("#jobArr").val(JSON.stringify(jobArr));
+      $("#jobNumArr").val(JSON.stringify(jobNumArr));
+      $("#jobCatArr").val(1);
+      $("#jobAmountArr").val(JSON.stringify(jobAmountArr));
+
+      $("#tbl_payment tbody").append(
+  "<tr jobamount='" +
+    jobamount +
+    "' job='" +
+    jobdesc +
+    "' jobid='" +
+    val2 +
+    "' jobcat='" +
+    jobcat +
+    "' jobcategory='" +
+    jobcategory +
+    "'>" +
+    "<td>" +
+    k +
+    "</td>" +
+    "<td></td>" +
+    "<td>" +
+    jobdesc +
+    "</td>" +
+    "<td class='jobAmount'>" + // <-- add this class
+    jobamount +
+    "</td>" +
+    "<td><span class='remove btn btn-danger btn-xs'>Remove</span></td>" +
+    "</tr>"
+);
+
+
+      k++;
+      $("#jobdesc").val("");
+      $("#jobdesc2").val("");
+      $("#jobamount").val("");
+      val2 = 0;
+      updateTotalAmount();
+    }
+  });
 
     //load companies by customer type
     $("#jobcategory").change(function() {
@@ -567,6 +603,7 @@ loadInvoicetoPrint(jobNo);
         $("#jobArr").val(JSON.stringify(jobArr));$("#jobNumArr").val(JSON.stringify(jobNumArr));
         $("#jobCatArr").val(JSON.stringify(jobcatArr));
         $(this).parent().parent().remove();
+        updateTotalAmount();
     });
 
 
@@ -577,6 +614,8 @@ loadInvoicetoPrint(jobNo);
         $("#modelNotifi").html('');
         if (jobArr.length > 0) {
             $('#updateJob').attr('disabled', true);
+            var formData = $(this).serializeArray();
+console.log(formData);
             $.ajax({
                 url: "../../job/updateJob",
                 type: "POST",
@@ -724,17 +763,7 @@ if(jobNo!=''){
                     $("#cusAddress").html(resultData.cus_data.Address01+", "+resultData.cus_data.Address02);
                     $("#cusAddress2").html(resultData.cus_data.Address03);
                     $("#cusPhone").html(resultData.cus_data.MobileNo);
-
-                    $("#contactName").html(resultData.vehicle_data.contactName);
-                    $("#registerNo").html(resultData.vehicle_data.RegNo);
-                    regNo = resultData.vehicle_data.RegNo;
-                    $("#make").html(resultData.vehicle_data.make);
-                    $("#model").html(resultData.vehicle_data.model);
-                    $("#fuel").html(resultData.vehicle_data.fuel_type);
-                    $("#chassi").html(resultData.vehicle_data.ChassisNo);
-                    $("#engNo").html(resultData.vehicle_data.EngineNo);
-                    $("#yom").html(resultData.vehicle_data.ManufactureYear);
-                    $("#color").html(resultData.vehicle_data.body_color);
+                 
 
                     $("#cusCode").val(resultData.cus_data.CusCode);
                     $("#vehicleNo").val(resultData.job_data.JRegNo);
@@ -744,7 +773,7 @@ if(jobNo!=''){
                     $("#odoOut").val(resultData.job_data.OdoOut);
                     $("#nextService").val(resultData.job_data.NextService);
                     $("#payType").val(resultData.job_data.JPayType);
-                    // $("#insdoc").val(resultData.job_data.JIsInsDoc);
+                  
                     $("#odoInUnit").val(resultData.job_data.OdoInUnit);
                     $("#odoOutUnit").val(resultData.job_data.OdoOutUnit);
                     $("#nextMileage").html(parseFloat(resultData.job_data.OdoIn)+parseFloat(resultData.job_data.NextService));
@@ -755,6 +784,11 @@ if(jobNo!=''){
                     $("#appoDate").val(resultData.job_data.appoimnetDate);
                     $("#deliveryDate").val(resultData.job_data.deliveryDate);
                     $("#estimateNo").val(resultData.job_data.JestimateNo);
+                    
+                    $("#phoneModel").val(resultData.job_data.PhoneModel);
+                    $("#emiNo").val(resultData.job_data.EmeiNo);
+
+                    
                     $("#jobtype").val(resultData.job_data.JJobType);
                     $("#jobSection").val(resultData.job_data.Jsection);
                     $("#advance").val(resultData.job_data.Advance);
@@ -773,16 +807,52 @@ if(jobNo!=''){
                         jobArr.push(resultData.job_desc[i].JobDescription);
                         jobNumArr.push(resultData.job_desc[i].JobDescId);
                         jobcatArr.push(resultData.job_desc[i].JobCategory);
+                        jobAmountArr.push(resultData.job_desc[i].JobAmount);
                         $("#jobArr").val(JSON.stringify(jobArr));
                         $("#jobNumArr").val(JSON.stringify(jobNumArr));
                         $("#jobCatArr").val(JSON.stringify(jobcatArr));
-                     $("#tbl_payment tbody").append("<tr job='" + resultData.job_desc[i].JobDescription + "' jobcat='" + resultData.job_desc[i].JobCategory + "'  jobid='" + resultData.job_desc[i].JobDescId + "' jobcategory='" + resultData.job_desc[i].job_category + "'><td>" + (k) + "</td><td></td><td>" + resultData.job_desc[i].JobDescription + "</td><td><span  class='remove btn btn-danger btn-xs'>Remove</span></td></tr>");
-            
+                        $("#jobAmountArr").val(JSON.stringify(jobAmountArr));
+
+                        var amount = resultData.job_desc[i].JobAmount || 0; // Default to 0 if not set
+
+    $("#tbl_payment tbody").append(
+        "<tr job='" + resultData.job_desc[i].JobDescription + 
+        "' jobcat='" + resultData.job_desc[i].JobCategory + 
+        "' jobid='" + resultData.job_desc[i].JobDescId + 
+        "' jobcategory='" + resultData.job_desc[i].job_category + 
+        "'><td>" + k + "</td><td></td><td>" + resultData.job_desc[i].JobDescription + 
+        "</td><td class='jobAmount'>" + amount + 
+        "</td><td><span class='remove btn btn-danger btn-xs'>Remove</span></td></tr>"
+    );
                     }
+                    updateTotalAmount();
                     
                 }
             });
     }
+function updateTotalAmount() {
+    var total = 0;
+
+    // Loop through each row in the tbody
+    $("#tbl_payment tbody tr").each(function() {
+        var amount = parseFloat($(this).find(".jobAmount").text()) || 0;
+        total += amount;
+    });
+
+    $("#totalAmount").text(total.toFixed(2));
+
+    // Calculate Balance (Total - Advance)
+    var advance = parseFloat($("#advance").val()) || 0;
+    var balance = total - advance;
+    $("#balance").val(balance.toFixed(2));
+}
+ $("#advance").on("keyup change", function () {
+    // let total = parseFloat($("#totalAmount").text()) || 0;
+    // let advance = parseFloat($(this).val()) || 0;
+    // let balance = total - advance;
+    // $("#balance").val(balance.toFixed(2));
+    updateTotalAmount();
+  });
 
  $("#btnPrint").click(function() {
          setTimeout(function(){$('#printArea').focus().print();},1000);
@@ -807,16 +877,16 @@ if(jobNo!=''){
                     $("#lblemail").html(resultData.cus_data.Email);
                     $("#lblCusName").html(resultData.cus_data.CusName);
                     
-                    $("#lblcusName").html(resultData.vehicle_data.contactName);
+                    // $("#lblcusName").html(resultData.vehicle_data.contactName);
                     
                     // $("#registerNo").html(resultData.vehicle_data.RegNo);
-                    $("#lblmake").html(resultData.vehicle_data.make);
-                    $("#lblmodel").html(resultData.vehicle_data.model);
-                    $("#lblFuelType").html(resultData.vehicle_data.fuel_type);
-                    $("#lblviNo").html(resultData.vehicle_data.ChassisNo);
+                    // $("#lblmake").html(resultData.vehicle_data.make);
+                    // $("#lblmodel").html(resultData.vehicle_data.model);
+                    // $("#lblFuelType").html(resultData.vehicle_data.fuel_type);
+                    // $("#lblviNo").html(resultData.vehicle_data.ChassisNo);
                     // $("#engNo").html(resultData.vehicle_data.EngineNo);
                     // $("#yom").html(resultData.vehicle_data.ManufactureYear);
-                    $("#lblcountry").html(resultData.vehicle_data.body_color);
+                    // $("#lblcountry").html(resultData.vehicle_data.body_color);
 
                     $("#lblcusCode").html(resultData.cus_data.CusCode);
                     $("#lblJobNo").html(resultData.job_data.JobCardNo);

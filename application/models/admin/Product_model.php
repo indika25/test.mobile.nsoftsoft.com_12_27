@@ -38,6 +38,101 @@ class Product_model extends CI_Model {
         return $query;
     }
 
+    public function loadproductstockbyid($product,$location)
+    {
+        return $this->db->select('Stock')
+            ->from('productstock')->where('ProductCode', $product)->where('Location', $location)
+            ->get()->row();
+    }
+
+
+//         public function loadproductstockbyid($product, $location)
+// {
+    
+//     $serialCheck = $this->db->select('productstock.Stock')
+//         ->from('productserialstock')
+//         ->join('productstock','productstock.ProductCode = productserialstock.ProductCode','INNER')
+//         ->where('productserialstock.SerialNo', $product) 
+//         ->where('productserialstock.Location', $location)
+//         ->get()
+//         ->row();
+
+//     $serialEmiCheck = $this->db->select('productstock.Stock')
+//         ->from('productserialemistock')
+//         ->join('productstock','productstock.ProductCode = productserialemistock.ProductCode','LEFT')
+//         // ->where('productserialemistock.SerialNo', $product) 
+//         // ->where('productserialemistock.Location', $location)
+//         ->get()
+//         ->row();
+
+//     if ($serialCheck) {
+//         return $serialCheck;
+//     }else if($serialEmiCheck){
+//          return $serialEmiCheck;
+//     } else {
+       
+//         return $this->db->select('Stock')
+//             ->from('productstock')->where('ProductCode', $product)->where('Location', $location)
+//             ->get()
+//             ->row();
+//     }
+// }
+    
+    public function loadproductstockbyidForSerial($product,$location)
+    {
+        // return $this->db->select('productserialstock.Quantity AS Stock')
+        //     ->from('productserialstock')->where('SerialNo', $product)->where('Location', $location)
+        //     ->get()->row();
+
+        $serialCheck = $this->db->select('productstock.Stock')
+        ->from('productserialstock')
+        ->join('productstock','productstock.ProductCode = productserialstock.ProductCode','INNER')
+        ->where('productserialstock.SerialNo', $product) 
+        ->where('productserialstock.Location', $location)
+        ->get()
+        ->row();
+
+        $serialEmiCheck = $this->db->select('productstock.Stock')
+            ->from('productserialemistock')
+            ->join('productstock','productstock.ProductCode = productserialemistock.ProductCode','LEFT')
+            ->group_start() // Start OR condition group
+                ->where('productserialemistock.SerialNo', $product)
+                ->or_where('productserialemistock.EmiNo', $product)
+            ->group_end()
+            ->where('productserialemistock.Location', $location)
+            ->get()
+            ->row();
+        
+        $EmiCheck = $this->db->select('productstock.Stock')
+            ->from('productimeistock')
+            ->join('productstock','productstock.ProductCode = productimeistock.ProductCode','LEFT')
+            ->where('productimeistock.EmiNo', $product) 
+            ->where('productimeistock.Location', $location)
+            ->get()
+            ->row();
+
+        if ($serialCheck) {
+            return $serialCheck;
+        }else if($serialEmiCheck){
+            return $serialEmiCheck;
+        }else if ($EmiCheck){
+            return $EmiCheck;
+        }
+         else {
+        
+            return $this->db->select('Stock')
+                ->from('productstock')->where('ProductCode', $product)->where('Location', $location)
+                ->get()
+                ->row();
+        }
+    }
+
+    public function loadPriceStockPrice($product){
+        return $this->db->select('Price')
+                    ->from('pricestock')
+                    ->where('PSCode', $product)
+                    ->get()->result();
+    }
 
     public function get_max_code($form) {
         $query = $this->db->select('*')->where('FormName', $form)->get('codegenerate');
@@ -80,7 +175,7 @@ class Product_model extends CI_Model {
     public function loadproductbyid($product) {
         return $this->db->select('product.*,productcondition.*')->from('product')
                         ->where('product.ProductCode', $product)
-                        ->where('product.Prd_IsActive', 1)
+                        // ->where('product.Prd_IsActive', 1)
                         ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
                         ->get()->row();
     }
@@ -102,11 +197,27 @@ class Product_model extends CI_Model {
     }
 
     public function loadproductbypcode($product, $pl) {
-        return $this->db->select('product.*,productcondition.*,productprice.ProductPrice')->from('product')
+        
+        return $this->db->select('product.*,productcondition.*,productprice.ProductPrice,productstock.stock')->from('product')
                         ->where('product.ProductCode', $product)
                         ->where('productprice.PL_No', $pl)
                         ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
                         ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+                        ->join('productstock', 'productstock.ProductCode = product.ProductCode')
+                        ->get()->row();
+    }
+
+   
+
+    public function loadproductbypcodegrn($product, $pl) {
+        return $this->db->select('product.*,productcondition.*,
+                        productprice.ProductPrice')
+                        ->from('product')
+                        ->where('product.ProductCode', $product)
+                        // ->where('productprice.PL_No', $pl)
+                        ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
+                        ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+                       
                         ->get()->row();
     }
 
@@ -140,42 +251,79 @@ class Product_model extends CI_Model {
     }
 
     public function loadproductbyserial($product, $pl, $location) {
-        $query2 = $this->db->select('product.*,productcondition.*,productprice.ProductPrice,productserialstock.SerialNo,goodsreceivenotedtl.GRN_UnitCost AS Prd_CostPrice')->from('product')
-                        ->where('productserialstock.SerialNo', $product)
-                        ->where('productserialstock.Location', $location)
-                        ->where('productprice.PL_No', $pl)
-                        ->where('productserialstock.Quantity', 1)
+        $query2 = $this->db->select('product.*,productcondition.*,productprice.ProductPrice,productserialstock.SerialNo,goodsreceivenotedtl.GRN_UnitCost AS Prd_CostPrice,department.Discount')
+                        ->from('product')
                         ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
                         ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
                         ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.SerialNo = productserialstock.SerialNo')
                         ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+                        ->join('department','department.DepCode = product.DepCode','left')
+                        ->where('productserialstock.SerialNo', $product)
+                        ->where('productserialstock.Location', $location)
+                        ->where('productprice.PL_No', $pl)
+                        ->where('productserialstock.Quantity', 1)
                         ->get();
-        $query1 =$this->db->select('product.*,productcondition.*,productprice.ProductPrice')->from('product')
+        $query3 =  $this->db->select('product.*,productcondition.*,productprice.ProductPrice, productserialemistock.SerialNo,goodsreceivenotedtl.GRN_UnitCost AS Prd_CostPrice,department.Discount')
+                        ->from('product')
+                        ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
+                        ->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode')
+                        ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.SerialNo = productserialemistock.SerialNo')
+                        ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+                        ->join('department','department.DepCode = product.DepCode','left')
+                        ->group_start() // Start OR condition group
+                            ->where('productserialemistock.SerialNo', $product)
+                            ->or_where('productserialemistock.EmiNo', $product)
+                        ->group_end()
+                        ->where('productserialemistock.Location', $location)
+                        ->where('productprice.PL_No', $pl)
+                        ->where('productserialemistock.Quantity', 1)
+                        ->get();
+        $query1 =$this->db->select('product.*,productcondition.*,productprice.ProductPrice,department.Discount')
+                        ->from('product')
                         ->where('product.BarCode', $product)
                         ->where('productprice.PL_No', $pl)
                         ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
                         ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+                        ->join('department','department.DepCode = product.DepCode','left')
+                        ->get();
+        $query4 = $this->db->select('product.*,productcondition.*,productprice.ProductPrice, productimeistock.EmiNo,goodsreceivenotedtl.GRN_UnitCost AS Prd_CostPrice,department.Discount')
+                        ->from('product')
+                        ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
+                        ->join('productimeistock', 'productimeistock.ProductCode = product.ProductCode')
+                        ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.EmiNo = productimeistock.EmiNo')
+                        ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+                        ->join('department','department.DepCode = product.DepCode','left')
+                        ->where('productimeistock.EmiNo', $product)
+                        ->where('productimeistock.Location', $location)
+                        ->where('productprice.PL_No', $pl)
+                        ->where('productimeistock.Quantity', 1)
                         ->get();
         if(($query1->num_rows())>0){
             return $query1->row();
         }else if(($query2->num_rows())>0){
             return $query2->row();
+        }else if(($query3->num_rows())>0){
+            return $query3->row();
+        }else if(($query4->num_rows())>0){ 
+             return $query4->row();
         }
     }
     
     public function loadproductbyserialArray($product, $pl, $location) {
-        $query2 = $this->db->select('productserialstock.SerialNo')->from('product')
-                ->where('productserialstock.Location', $location)
-                ->where('productprice.PL_No', $pl)
-			->where('productserialstock.Quantity', 1)
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->join('productprice', 'productprice.ProductCode = product.ProductCode')
-                ->get();
-        $query1 = $this->db->select('productcondition.IsSerial')->from('product')
-                ->where('product.ProductCode', $product)
-                ->where('productcondition.IsSerial', 1)
-                ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
-                ->get();
+        $query2 = $this->db->select('productserialstock.SerialNo,department.Discount')->from('product')
+        ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+        ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+        ->join('department','department.DepCode = product.DepCode','left')
+        ->where('productserialstock.Location', $location)
+        ->where('productprice.PL_No', $pl)
+        ->where('productserialstock.Quantity', 1)
+        ->get();
+        $query1 = $this->db->select('productcondition.IsSerial,department.Discount')->from('product')
+        ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
+        ->join('department','department.DepCode = product.DepCode','left')
+        ->where('product.ProductCode', $product)
+        ->where('productcondition.IsSerial', 1)
+        ->get();
 
         if (($query1->num_rows()) > 0) {
             if (($query2->num_rows()) > 0) {
@@ -191,74 +339,237 @@ class Product_model extends CI_Model {
         }
     }
     
-    public function loadproductbyserialArrayByCode($product, $pl, $location) {
+    // public function loadproductbyserialArrayByCode($product, $pl, $location) {
+       
    
-        $query2 = $this->db->select('productserialstock.SerialNo')->from('product')
-                ->where('product.ProductCode', $product)
-                ->where('productserialstock.Location', $location)
-                ->where('productprice.PL_No', $pl)
-        ->where('productserialstock.Quantity', 1)
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->join('productprice', 'productprice.ProductCode = product.ProductCode')
-                ->get();
-        $query4 = $this->db->select('productserialstock.SerialNo')->from('product')
-                //->where('productserialstock.SerialNo', $product)
-                ->where('productserialstock.Location', $location)
-                ->where('productprice.PL_No', $pl)
-        ->where('productserialstock.Quantity', 1)
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->join('productprice', 'productprice.ProductCode = product.ProductCode')
-                ->get();
-        $query1 = $this->db->select('productcondition.IsSerial')->from('product')
-                ->where('product.ProductCode', $product)
-                ->where('productcondition.IsSerial', 1)
-                ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
-                ->get();
-        $query3 = $this->db->select('productcondition.IsSerial')->from('product')
-                ->where('productserialstock.SerialNo', $product)
-                ->where('productcondition.IsSerial', 1)
-                ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->get();
-        
-        $query5 = $this->db->select('product.ProductCode')->from('product')
-                ->where('productserialstock.SerialNo', $product)
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->group_by('product.ProductCode')
-                ->get();
-        
-        if (($query1->num_rows()) > 0) {
-            if (($query2->num_rows()) > 0) {
-                foreach ($query2->result_array() as $row) {
-                    $row_set[] = htmlentities(stripslashes($row['SerialNo']));
-                }
-                return ($row_set);
-            }
-        }else if (($query3->num_rows()) > 0) {
-            if (($query5->num_rows()) > 0) {
-                //get product code by serial
-                foreach ($query5->result_array() as $row) {
-                    $pro = htmlentities(stripslashes($row['ProductCode']));
-                }
+    //     $query2 = $this->db->select('productserialstock.SerialNo')->from('product')
+    //             ->where('product.ProductCode', $product)
+    //             ->where('productserialstock.Location', $location)
+    //             ->where('productprice.PL_No', $pl)
+    //             ->where('productserialstock.Quantity', 1)
+    //             ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+    //             ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+    //             ->get();
+    //     $query4 = $this->db->select('productserialstock.SerialNo')->from('product')
+    //             //->where('productserialstock.SerialNo', $product)
+    //             ->where('productserialstock.Location', $location)
+    //             ->where('productprice.PL_No', $pl)
+    //             ->where('productserialstock.Quantity', 1)
+    //             ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+    //             ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+    //             ->get();
+    //             $query1 = $this->db->select('productcondition.IsSerial')->from('product')
+    //             ->where('product.ProductCode', $product)
+    //             ->where('productcondition.IsSerial', 1)
+    //             ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
+    //             ->get();
+    //             $query3 = $this->db->select('productcondition.IsSerial')->from('product')
+    //             ->where('productserialstock.SerialNo', $product)
+    //             ->where('productcondition.IsSerial', 1)
+    //             ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
+    //             ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+    //             ->get();
                 
-                 $query4 = $this->db->select('productserialstock.SerialNo')->from('product')
-                ->where('product.ProductCode', $pro)
-                ->where('productserialstock.Location', $location)
-                ->where('productprice.PL_No', $pl)
-                ->where('productserialstock.Quantity', 1)
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->join('productprice', 'productprice.ProductCode = product.ProductCode')
-                ->get();
+    //             $query5 = $this->db->select('product.ProductCode')->from('product')
+    //             ->where('productserialstock.SerialNo', $product)
+    //             ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+    //             ->group_by('product.ProductCode')
+    //             ->get();
+              
+    //     if (($query1->num_rows()) > 0) {
+    //         if (($query2->num_rows()) > 0) {
+    //             foreach ($query2->result_array() as $row) {
+    //                 $row_set[] = htmlentities(stripslashes($row['SerialNo']));
+    //             }
+    //             return ($row_set);
+    //         }
+    //     }else if (($query3->num_rows()) > 0) {
+    //         if (($query5->num_rows()) > 0) {
+    //             //get product code by serial
+    //             foreach ($query5->result_array() as $row) {
+    //                 $pro = htmlentities(stripslashes($row['ProductCode']));
+    //             }
                 
-                foreach ($query4->result_array() as $row) {
-                    $row_set[] = htmlentities(stripslashes($row['SerialNo']));
-                }
-                return ($row_set);
-            } 
-        } else  {
-            return NULL;
-        }
+    //              $query4 = $this->db->select('productserialstock.SerialNo')->from('product')
+    //             ->where('product.ProductCode', $pro)
+    //             ->where('productserialstock.Location', $location)
+    //             ->where('productprice.PL_No', $pl)
+    //             ->where('productserialstock.Quantity', 1)
+    //             ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+    //             ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+    //             ->get();
+                
+    //             foreach ($query4->result_array() as $row) {
+    //                 $row_set[] = htmlentities(stripslashes($row['SerialNo']));
+    //             }
+    //             return ($row_set);
+    //         } 
+    //     } else  {
+    //         return NULL;
+    //     }
+    // }
+
+ public function loadproductbyserialArrayByCode($product, $pl, $location)
+{
+  
+    $query1 = $this->db->select('productserialstock.SerialNo')
+        ->from('productserialstock')
+        ->join('productprice', 'productprice.ProductCode = productserialstock.ProductCode', 'inner')
+        ->where('productserialstock.SerialNo', $product)
+        ->where('productserialstock.Location', $location)
+        ->where('productprice.PL_No', $pl)
+        ->where('productserialstock.Quantity', 1)
+        ->get();
+
+    if ($query1->num_rows() > 0) {
+         $result = $query1->row_array(); 
+    return $result;
     }
+
+    //If not found, check in productemiserialstock
+    $query2 = $this->db->select('productserialemistock.SerialNo,.productserialemistock.EmiNo')
+        ->from('productserialemistock')
+        ->join('productprice', 'productprice.ProductCode = productserialemistock.ProductCode', 'inner')
+        ->group_start() // Start OR condition group
+            ->where('productserialemistock.SerialNo', $product)
+            ->or_where('productserialemistock.EmiNo', $product)
+        ->group_end()
+        ->where('productserialemistock.Location', $location)
+        ->where('productprice.PL_No', $pl)
+        ->where('productserialemistock.Quantity', 1)
+        ->get();
+
+    if ($query2->num_rows() > 0) {
+        $result = $query2->row_array(); 
+    return $result;
+    }
+    $query3 = $this->db->select('productimeistock.EmiNo')
+        ->from('productimeistock')
+        ->join('productprice', 'productprice.ProductCode = productimeistock.ProductCode', 'inner')
+        ->where('productimeistock.EmiNo', $product)
+        ->where('productimeistock.Location', $location)
+        ->where('productprice.PL_No', $pl)
+        ->where('productimeistock.Quantity', 1)
+        ->get();
+
+    if ($query3->num_rows() > 0) {
+        $result = $query3->row_array(); 
+    return $result;
+    }
+
+    $serials = $this->db->select('SerialNo')
+        ->from('productserialstock')
+        ->where('ProductCode', $product)
+        ->where('Location', $location)
+        ->where('Quantity', 1)
+        ->get()
+        ->result_array();
+if($serials){
+    $serial_numbers = array_column($serials, 'SerialNo');
+
+    $result = ['SerialNo' => $serial_numbers];
+
+    return $result;
+    }
+
+    $emi_serials = $this->db->select('SerialNo, EmiNo')
+        ->from('productserialemistock')
+        ->where('ProductCode', $product)
+        ->where('Location', $location)
+        ->where('Quantity', 1)
+        ->get();
+
+        if ($emi_serials->num_rows() > 0) {
+            $result = $emi_serials->row_array(); 
+        return $result;
+        }
+        
+
+    $emis = $this->db->select('EmiNo')
+        ->from('productimeistock')
+        ->where('ProductCode', $product)
+        ->where('Location', $location)
+        ->where('Quantity', 1)
+        ->get();
+
+        
+    if ($emis->num_rows() > 0) {
+        $result = $emis->row_array(); 
+    return $result;
+    }
+       
+
+
+    // Not found in either table
+    return null;
+}
+
+ public function loadproductbyEMEIArrayByCode($product, $pl, $location)
+{
+
+   
+    // 1️⃣ Check in productimeistock (Main EMI Table)
+    $query1 = $this->db->select('productimeistock.EmiNo')
+        ->from('productimeistock')
+        ->join('productprice', 'productprice.ProductCode = productimeistock.ProductCode', 'inner')
+        ->where('productimeistock.EmiNo', $product)
+        ->where('productimeistock.Location', $location)
+        ->where('productprice.PL_No', $pl)
+        ->where('productimeistock.Quantity', 1)
+        ->get();
+
+    if ($query1->num_rows() > 0) {
+        return $query1->result_array();
+    }
+
+
+    // 2️⃣ Check in productserialemistock (Serial + EMI table) — BUT return ONLY EMI
+    $query2 = $this->db->select('productserialemistock.EmiNo')
+        ->from('productserialemistock')
+        ->join('productprice', 'productprice.ProductCode = productserialemistock.ProductCode', 'inner')
+        ->group_start()
+            ->where('productserialemistock.SerialNo', $product)
+            ->or_where('productserialemistock.EmiNo', $product)
+        ->group_end()
+        ->where('productserialemistock.Location', $location)
+        ->where('productprice.PL_No', $pl)
+        ->where('productserialemistock.Quantity', 1)
+        ->get();
+
+    if ($query2->num_rows() > 0) {
+        return $query2->result_array();
+    }
+
+
+    // 3️⃣ Get EMI from productserialemistock (ONLY EMI)
+    $emi_serials = $this->db->select('EmiNo')
+        ->from('productserialemistock')
+        ->where('ProductCode', $product)
+        ->where('Location', $location)
+        ->where('Quantity', 1)
+        ->get();
+
+    if ($emi_serials->num_rows() > 0) {
+        return $emi_serials->result_array();
+    }
+
+
+    // 4️⃣ Get EMI from productimeistock (Backup)
+    $emis = $this->db->select('EmiNo')
+        ->from('productimeistock')
+        ->where('ProductCode', $product)
+        ->where('Location', $location)
+        ->where('Quantity', 1)
+        ->get();
+
+    if ($emis->num_rows() > 0) {
+        return $emis->result_array();
+    }
+
+    
+    return null;
+}
+
     
      public function loadproductbyserialArrayBySerial($product, $pl, $location) {
    
@@ -311,6 +622,10 @@ class Product_model extends CI_Model {
     
     public function loaddepartment() {
         return $this->db->select()->from('department')->get()->result();
+    }
+
+    public function loaddepDis($dep) {
+        return $this->db->select('Discount')->from('department')->where('DepCode',$dep)->get()->row();
     }
 
     public function loadsubdepartment($dep) {
@@ -374,4 +689,134 @@ class Product_model extends CI_Model {
      public function loadSystemOptionById($id){
        return $this->db->select('Value')->from('systemoptions')->where('ID', $id)->get()->row()->Value;
     }
+
+
+    //   public function loadpricestockbyid($product,$location,$price,$pl)
+    // {
+    //         return $this->db->select('Stock,Price,UnitCost')
+    //         ->from('pricestock')
+    //         ->where('PSCode', $product)
+    //         ->where('PSLocation', $location)
+    //         ->where('Price', $price)
+    //         ->where('PSPriceLevel', $pl)
+    //         ->get()->row();
+        
+        
+    // }
+
+    public function loadpricestockbyid($product, $location, $price, $pl)
+        {
+            
+            if($pl ==1){
+                 $serialCheck = $this->db->select('pricestock.Stock AS Stock, pricestock.Price AS Price, pricestock.UnitCost AS UnitCost')
+                ->from('productserialstock')
+                ->join('pricestock','pricestock.PSCode = productserialstock.ProductCode','INNER')
+                ->where('SerialNo', $product) 
+                ->where('Location', $location)
+                ->get()
+                ->row();
+
+            $serialEmiCheck = $this->db->select('pricestock.Stock AS Stock, pricestock.Price AS Price, pricestock.UnitCost AS UnitCost')
+                ->from('productserialemistock')
+                ->join('pricestock','pricestock.PSCode = productserialemistock.ProductCode','INNER')
+                ->group_start() // Start OR condition group
+                    ->where('productserialemistock.SerialNo', $product)
+                    ->or_where('productserialemistock.EmiNo', $product)
+                ->group_end()
+                ->where('Location', $location)
+                ->get()
+                ->row();
+
+            $EmiCheck = $this->db->select('pricestock.Stock AS Stock, pricestock.Price AS Price, pricestock.UnitCost AS UnitCost')
+                ->from('productimeistock')
+                ->join('pricestock','pricestock.PSCode = productimeistock.ProductCode','INNER')
+                ->where('EmiNo', $product) 
+                ->where('Location', $location)
+                ->get()
+                ->row();
+
+            
+
+            if ($serialCheck) {
+            
+                return $serialCheck;
+            }else if($serialEmiCheck){
+                return $serialEmiCheck;
+            }else if($EmiCheck){
+                return $EmiCheck;
+            } else {
+            
+                return $this->db->select('Stock, Price, UnitCost')
+                    ->from('pricestock')
+                    ->where('PSCode', $product)
+                    ->where('PSLocation', $location)
+                    ->where('Price', $price)
+                    
+                    ->get()
+                    ->row();
+            }
+            }else if($pl==2){
+                
+                 $serialCheck = $this->db->select('pricestock.Stock AS Stock, pricestock.WholesalesPrice AS Price, pricestock.UnitCost AS UnitCost')
+                ->from('productserialstock')
+                ->join('pricestock','pricestock.PSCode = productserialstock.ProductCode','INNER')
+                ->where('SerialNo', $product) 
+                ->where('Location', $location)
+                ->get()
+                ->row();
+
+            $serialEmiCheck = $this->db->select('pricestock.Stock AS Stock, pricestock.WholesalesPrice AS Price, pricestock.UnitCost AS UnitCost')
+                ->from('productserialemistock')
+                ->join('pricestock','pricestock.PSCode = productserialemistock.ProductCode','INNER')
+                ->group_start() // Start OR condition group
+                    ->where('productserialemistock.SerialNo', $product)
+                    ->or_where('productserialemistock.EmiNo', $product)
+                ->group_end()
+                ->where('Location', $location)
+                ->get()
+                ->row();
+
+            $EmiCheck = $this->db->select('pricestock.Stock AS Stock, pricestock.WholesalesPrice AS Price, pricestock.UnitCost AS UnitCost')
+                ->from('productimeistock')
+                ->join('pricestock','pricestock.PSCode = productimeistock.ProductCode','INNER')
+                ->where('EmiNo', $product) 
+                ->where('Location', $location)
+                ->get()
+                ->row();
+
+            
+
+            if ($serialCheck) {
+            
+                return $serialCheck;
+            }else if($serialEmiCheck){
+                return $serialEmiCheck;
+            }else if($EmiCheck){
+                return $EmiCheck;
+            } else {
+            
+                return $this->db->select('Stock,WholesalesPrice AS Price, UnitCost')
+                    ->from('pricestock')
+                    ->where('PSCode', $product)
+                    ->where('PSLocation', $location)
+                    ->where('Price', $price)
+                    ->get()
+                    ->row();
+            }
+            }
+           
+        }
+
+
+     public function loadproductbypcodegrnWhole($product, $pl) {
+        return $this->db->select('productprice.ProductPrice')
+                        ->from('product')
+                        ->where('product.ProductCode', $product)
+                         ->where('productprice.PL_No', 2)
+                        ->join('productcondition', 'productcondition.ProductCode = product.ProductCode')
+                        ->join('productprice', 'productprice.ProductCode = product.ProductCode')
+                        ->get()->row();
+    }
+
+   
 }

@@ -165,20 +165,43 @@ class Purchase extends Admin_Controller {
         $supcode = $_GET['supcode'];
         $location = $_SESSION['location'];
 
-        if($supcode!='' || $supcode!=0){
-            $q = $this->db->select('GRN_No AS id,GRN_No AS text')->from('goodsreceivenotehed')->where('GRN_Location',$location)->where('GRN_IsCancel',0)->where('GRN_SupCode',$supcode)->like('GRN_No', $query)->order_by('GRN_No','DESC')->get()->result();
-        }elseif($supcode==0){
-            $q = $this->db->select('GRN_No AS id,GRN_No AS text')->from('goodsreceivenotehed')->where('GRN_Location',$location)->where('GRN_IsCancel',0)->like('GRN_No', $query)->order_by('GRN_No','DESC')->get()->result();
-            echo $supcode;die;
+        if ($supcode != '' && $supcode != 0) {
+            // Supplier selected
+            $q = $this->db->select('GRN_No AS id, GRN_No AS text')
+                ->from('goodsreceivenotehed')
+                ->where('GRN_Location', $location)
+                ->where('GRN_IsCancel', 0)
+                ->where('GRN_SupCode', $supcode)
+                ->like('GRN_No', $query)
+                ->order_by('GRN_No', 'DESC')
+                ->get()
+                ->result();
+        } else {
+            // Supplier not selected (0 or empty)
+            $q = $this->db->select('GRN_No AS id, GRN_No AS text')
+                ->from('goodsreceivenotehed')
+                ->where('GRN_Location', $location)
+                ->where('GRN_IsCancel', 0)
+                ->like('GRN_No', $query)
+                ->order_by('GRN_No', 'DESC')
+                ->get()
+                ->result();
         }
-        
-        echo json_encode($q);die;
+
+        echo json_encode($q);
+        die;
     }
+
 
     public function loadprnjson() {
         $query = $_GET['q'];
         $location = $_SESSION['location'];
-        $q = $this->db->select('PRN_No AS id,PRN_No AS text')->from('purchasereturnnotehed')->where('PRN_Location',$location)->where('PRN_IsCancel',0)->like('PRN_No', $query)->order_by('PRN_No','DESC')->get()->result();
+        $q = $this->db->select('PRN_No AS id,PRN_No AS text')
+        ->from('purchasereturnnotehed')
+        ->where('PRN_Location',$location)
+        ->where('PRN_IsCancel',0)
+        ->like('PRN_No', $query)->order_by('PRN_No','DESC')
+        ->get()->result();
         echo json_encode($q);die;
     }
 
@@ -190,8 +213,10 @@ class Purchase extends Admin_Controller {
     
     public function loadproductjson() {
         $query = $_GET['q'];
-        $sup= $_REQUEST['sup'];$supCode= $_REQUEST['supcode'];
+        $sup= $_REQUEST['sup'];
+        $supCode= $_REQUEST['supcode'];
         $isGrn = $_REQUEST['isGrn'];
+        
         
         if($isGrn==1){
             $grnNo = $_REQUEST['grn_no'];
@@ -201,6 +226,8 @@ class Purchase extends Admin_Controller {
         }
         die;
     }
+
+ 
     
     public function savePO() {
         if($_POST['action']==1){

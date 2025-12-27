@@ -66,7 +66,14 @@ $(document).ready(function() {
                                     ItemCodeArr.push(ItemCode);
                                     
 
-                                    $("#tbl_payment tbody").append("<tr id='" + (key + 1) + "'><td>" + (key + 1) + "</td><td>" + ItemCode + "</td><td>" + Product + "</td><td>" + value.SerialNo + "</td><td>" + value.GRN_Qty + "</td><td>" + value.GRN_FreeQty + "</td><td class='text-right'>" + accounting.formatMoney(value.GRN_UnitCost) + "</td><td class='text-right'>" + accounting.formatMoney(value.GRN_DisAmount) + "</td><td class='text-right'>" + accounting.formatMoney(value.GRN_NetAmount) + "</td></tr>");
+                                    $("#tbl_payment tbody").append("<tr id='" + (key + 1) + "'><td>" + (key + 1) + 
+                                    "</td><td>" + ItemCode + 
+                                    "</td><td>" + Product + 
+                                    "</td><td>" + value.SerialNo + 
+                                    "</td><td>" + value.EmiNo + 
+                                    "</td><td>" + value.GRN_Qty + 
+                                    "</td><td>" + value.GRN_FreeQty + 
+                                    "</td><td class='text-right'>" + accounting.formatMoney(value.GRN_UnitCost) + "</td><td class='text-right'>" + accounting.formatMoney(value.GRN_DisAmount) + "</td><td class='text-right'>" + accounting.formatMoney(value.GRN_NetAmount) + "</td></tr>");
                                     $("#totalAmount").html(accounting.formatMoney(value.GRN_totalAmount));
                                     $("#totalDis").html(accounting.formatMoney(value.TotalDiscount));
                                     $("#totalNet").html(accounting.formatMoney(value.totalNet));
@@ -91,68 +98,66 @@ $(document).ready(function() {
     });
                 //$('#invDate,#chequeReciveDate').datepicker().datepicker("setDate", new Date());
 
-                $("#pay").click(function() {
-                    var payDate = $("#invDate").val();
-                    var remark = $("#remark").val();
-                    var invUser = $("#invUser").val();
-                    location = $("#location").val();
-                    var sendItem_code = JSON.stringify(ItemCodeArr);
+    $("#pay").click(function() {
+        var payDate = $("#invDate").val();
+        var remark = $("#remark").val();
+        var invUser = $("#invUser").val();
+        location = $("#location").val();
+        var sendItem_code = JSON.stringify(ItemCodeArr);
                     
-                    var r = confirm("Do you want to cancel this invoice?");
-    if (r == true) {
-        if (paymentNo == '' || paymentNo == 0) {
-                        alert('Please select an invoice ');
-                        return false;
-                    } else { 
-                        $.ajax({
-                            type: "POST",
-                            url: "cancelGRN",
-                            data: {action: "cancelGRN", paymentNo: paymentNo, remark: remark, payDate: payDate, invUser: invUser, supCode: cusCode, invNo: invNo, Item_codeArr: sendItem_code,location:location},
-                            success: function(data)
-                            {   var resultData = JSON.parse(data);
-                                var feedback = resultData['fb'];
-                                var invNumber = resultData['InvNo'];
-                                var cancelNo = resultData['CancelNo'];
-                                if (feedback == 1) {
-                                    alert('Invoice successfully canceled.');
-                                    rid = 0;
-                                    paymentNo = 0;
-                                    clearPaymentDetails();
-                                    $("#customer").val('');
-                                    $("#remark").val('');
-                                    $("#lastTranaction").html("Last Cancel Invoice : "+invNumber+" <br> Last Cancel No : "+cancelNo );
-                                }else {
-                                    alert('Transaction not saved');
-//                                    $("#saveInvoice").prop('disabled', false);
-                                }
+        var r = confirm("Do you want to cancel this invoice?");
+            if (r == true) {
+                if (paymentNo == '' || paymentNo == 0) {
+                                alert('Please select an invoice ');
+                                return false;
+                            } else { 
+                                $.ajax({
+                                    type: "POST",
+                                    url: "cancelGRN",
+                                    data: {action: "cancelGRN", paymentNo: paymentNo, remark: remark, payDate: payDate, invUser: invUser, supCode: cusCode, invNo: invNo, Item_codeArr: sendItem_code,location:location},
+                                    success: function(data)
+                                    {   var resultData = JSON.parse(data);
+                                        var feedback = resultData['fb'];
+                                        var invNumber = resultData['InvNo'];
+                                        var cancelNo = resultData['CancelNo'];
+                                        if (feedback == 1) {
+                                            alert('Invoice successfully canceled.');
+                                            rid = 0;
+                                            paymentNo = 0;
+                                            clearPaymentDetails();
+                                            $("#customer").val('');
+                                            $("#remark").val('');
+                                            $("#lastTranaction").html("Last Cancel Invoice : "+invNumber+" <br> Last Cancel No : "+cancelNo );
+                                        }else {
+                                            alert('Transaction not saved');
+        //                                    $("#saveInvoice").prop('disabled', false);
+                                        }
 
+                                    }
+                                });
                             }
-                        });
-                    }
-    } else {
-        return false;
-    }
-    
-                    
+            } else {
+                return false;
+            }              
 
-                });
+    });
 
-                function clearPaymentDetails() {
+    function clearPaymentDetails() {
 
-                    $("#remark").val('');
-                    ItemCodeArr.length = 0;
-                    $("#invoice").val('');
-                    invNo = 0;
-                    TotalAmount = 0;
-                    TotalNetAmount = 0;
-                    proDiscount = 0;
-                    paymentId = 0;
-                    paymentNo = 0;
-                    cusCode = 0;
-                    $("#tbl_payment tbody").empty();
-                    $("#totalAmount").html(accounting.formatMoney(0));
-                    $("#totalDis").html(accounting.formatMoney(0));
-                    $("#totalNet").html(accounting.formatMoney(0));
+        $("#remark").val('');
+            ItemCodeArr.length = 0;
+            $("#invoice").val('');
+            invNo = 0;
+            TotalAmount = 0;
+            TotalNetAmount = 0;
+            proDiscount = 0;
+            paymentId = 0;
+            paymentNo = 0;
+            cusCode = 0;
+            $("#tbl_payment tbody").empty();
+            $("#totalAmount").html(accounting.formatMoney(0));
+            $("#totalDis").html(accounting.formatMoney(0));
+            $("#totalNet").html(accounting.formatMoney(0));
 
-                }
-            });
+        }
+    });

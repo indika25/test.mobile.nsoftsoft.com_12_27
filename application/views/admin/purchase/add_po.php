@@ -259,6 +259,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="hidden" class="form-control" required="required"  name="batchCode" id="batchCode">
                                                 <input type="hidden" class="form-control" required="required"  name="upc" id="upc">
                                                 <input type="hidden" class="form-control" required="required"  name="isSerial" id="isSerial">
+                                                <input type="hidden" class="form-control" required="required" name="isEmi" id="isEmi">
                                             </div>
                                         </div>
                                         <div class="form-group" id="dv_SN">
@@ -268,6 +269,13 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                                 <input type="hidden" tabindex="14" class="form-control" required="required"  name="serialQty" id="serialQty"  value="0">
                                             </div>
                                         </div>
+                                         <div class="form-group" id="emiDiv"> 
+                                             <label for="sellingPrice"class="col-sm-4 control-label">Emi No <span class="required">*</span></label>
+                                             <div class="col-sm-6">
+                                                 <input type="text"  tabindex="13"  min="0" step="1" class="form-control" name="emiNo" id="emiNo" readonly>
+                                                 
+                                             </div>
+                                         </div>
                                         <div class="form-group">
                                             <label for="product" class="col-sm-7 control-label">Product Wise Discount<span class="required">*</span></label>
                                             <div class="col-sm-3"><input tabindex="15" type="radio" checked required="required" class="prd_icheck"  name="discount_type" id="productWise" value="1"></div>

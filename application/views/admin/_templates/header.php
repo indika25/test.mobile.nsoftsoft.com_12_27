@@ -137,6 +137,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
             <script>$(document).ready(function() { $('body').addClass('sidebar-collapse'); });</script>
             <script src="<?php echo base_url('assets/frameworks/job/add_sales_invoice1.6.js'); ?>"></script>
         <?php endif; ?>
+        <?php if ($this->router->fetch_method() == 'addIssueNote'): ?>
+            <script>$(document).ready(function() { $('body').addClass('sidebar-collapse'); });</script>
+            <script src="<?php echo base_url('assets/frameworks/job/add_issue_note.js'); ?>"></script>
+        <?php endif; ?>
         <?php if ($this->router->fetch_class() == 'job'): ?>
             <!--job js-->
             <script src="<?php echo base_url('assets/frameworks/jQuery.print.js'); ?>"></script>
@@ -214,6 +218,30 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                 <script src="<?php echo base_url('assets/frameworks/pos/barcode.js'); ?>"></script>
             <?php endif; ?>
         <?php endif; ?>
+
+         <?php if ($this->router->fetch_class() == 'stocktransfer'): ?>
+            <!--grn js-->
+            <script src="<?php echo base_url('assets/frameworks/jQuery.print.js'); ?>"></script>
+            <script src="<?php echo base_url('assets/frameworks/jqueryui/jquery-ui.js'); ?>"></script>
+            <script src="<?php echo base_url('assets/plugins/datepicker/bootstrap-datepicker.js'); ?>"></script>
+            <?php if ($this->router->fetch_method() == 'stockout'): ?>
+                <script src="<?php echo base_url('assets/frameworks/stocktransfer/stocktransferout.js'); ?>"></script>
+            <?php endif; ?>
+            <script src="<?php echo base_url($frameworks_dir . '/bootstrap/js/bootstrap-switch.min.js'); ?>"></script>
+            <script src="<?php echo base_url($plugins_dir . '/account/accounting.min.js'); ?>"></script>
+            <script>$(document).ready(function() {
+                    $('body').addClass('sidebar-collapse');
+                });</script>
+            <script src="<?php echo base_url('assets/plugins/datepicker/bootstrap-datepicker.js'); ?>"></script>
+            <script src="<?php echo base_url($plugins_dir . '/select2/js/select2.min.js'); ?>"></script>
+            <?php if ($this->router->fetch_method() == 'cancel_grn'): ?>
+                <script src="<?php echo base_url('assets/frameworks/pos/grn_cancel.js'); ?>"></script>
+            <?php endif; ?> <?php if ($this->router->fetch_method() == 'barcodeprint'): ?>
+                <script src="<?php echo base_url('assets/frameworks/pos/barcode.js'); ?>"></script>
+            <?php endif; ?>
+        <?php endif; ?>
+
+
         <?php if ($this->router->fetch_class() == 'mrn'): ?>
             <!--grn js-->
             <script src="<?php echo base_url('assets/frameworks/jQuery.print.js'); ?>"></script>

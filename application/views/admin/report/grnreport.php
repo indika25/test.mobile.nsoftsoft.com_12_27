@@ -109,7 +109,8 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                     <td>User</td>
                                     <td>Stock In</td> -->
                                     <td>Is Cancel</td>
-                                    <td>Serial no</td>
+                                    <td>Serial No</td>
+                                    <td>IEMI No</td>
                                 </tr>
                             </thead>
                             <tbody>
@@ -126,7 +127,10 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                                     <td id="totalvalue"></td>
                                     <td id="totaldis"></td>
                                     <td id="totalprofit"></td>
-                                    <td></td><td></td><td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -390,6 +394,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
         row.append($("<td>" + rowData[index].GRN_Selling + "</td>"));
         row.append($("<td>" + cancel + "</td>"));
         row.append($("<td>" + rowData[index].SerialNo + "</td>"));  
+        row.append($("<td>" + rowData[index].EmiNo + "</td>")); 
     }
     function printdiv() {
         $("#saletable").print({

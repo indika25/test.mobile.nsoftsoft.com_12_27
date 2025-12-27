@@ -354,56 +354,126 @@ class Imei_model extends CI_Model {
     }
     
     public function loadproductlocbyserial($product, $location) {
-        $query2 = $this->db->select('productserialstock.SerialNo,productserialstock.Quantity,location.location')->from('productserialstock')
-                ->where('productserialstock.SerialNo', $product)
-                ->join('location', 'location.location_id = productserialstock.Location')
-                ->get();
-        $query1 = $this->db->select('productserialstock.SerialNo,productserialstock.Quantity,location.location')->from('productserialstock')
-                ->where('productserialstock.SerialNo', $product)
-                ->where('productserialstock.Quantity>', 0)
-                ->join('location', 'location.location_id = productserialstock.Location')
-                ->get();
-        if (($query1->num_rows()) > 0) {
+        $query2 = $this->db->select('productserialstock.SerialNo,productserialstock.Quantity,location.location')
+            ->from('productserialstock')
+            ->where('productserialstock.SerialNo', $product)
+            ->join('location', 'location.location_id = productserialstock.Location')
+            ->get();
+
+        $query1 = $this->db->select('productserialemistock.SerialNo,productserialemistock.EmiNo,productserialemistock.Quantity,location.location')
+            ->from('productserialemistock')
+            ->join('location', 'location.location_id = productserialemistock.Location') 
+            ->group_start()
+                ->where('productserialemistock.SerialNo', $product)
+                ->or_where('productserialemistock.EmiNo', $product)
+            ->group_end()
+            ->get();
+
+        $query3 = $this->db->select('productimeistock.EmiNo,productimeistock.Quantity,location.location')
+            ->from('productimeistock')
+            ->where('productimeistock.EmiNo', $product)
+            ->join('location', 'location.location_id = productimeistock.Location')
+            ->get();
+
+        if ($query1->num_rows() > 0) {
             return $query1->row();
-        } else if (($query2->num_rows()) > 0) {
+        } elseif ($query2->num_rows() > 0) {
             return $query2->row();
-        }
-    }
-    
-    public function loadproductbyserial($product, $location) {
-        $query2 = $this->db->select('product.*,productprice.ProductPrice,productserialstock.SerialNo,productserialstock.Quantity,goodsreceivenotedtl.GRN_UnitCost,supplier.SupName,goodsreceivenotehed.GRN_No,goodsreceivenotehed.GRN_DateORG,location.location')->from('product')
-                ->where('productserialstock.SerialNo', $product)
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.SerialNo = productserialstock.SerialNo')
-                ->join('goodsreceivenotehed', 'goodsreceivenotedtl.GRN_No = goodsreceivenotehed.GRN_No')
-                ->join('productprice', 'productprice.ProductCode = product.ProductCode')
-                ->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode')
-                ->join('location', 'location.location_id = productserialstock.Location')
-                ->get();
-        $query1 = $this->db->select('product.*,productprice.ProductPrice,productserialstock.SerialNo,productserialstock.Quantity,goodsreceivenotedtl.GRN_UnitCost,supplier.SupName,goodsreceivenotehed.GRN_No,goodsreceivenotehed.GRN_DateORG,location.location')->from('product')
-                ->where('productserialstock.SerialNo', $product)
-                ->where('productserialstock.Location', $location)
-                ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
-                ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.SerialNo = productserialstock.SerialNo')
-                ->join('goodsreceivenotehed', 'goodsreceivenotedtl.GRN_No = goodsreceivenotehed.GRN_No')
-                ->join('productprice', 'productprice.ProductCode = product.ProductCode')
-                ->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode')
-                ->join('location', 'location.location_id = productserialstock.Location')
-                ->get();
-        if (($query1->num_rows()) > 0) {
-            return $query1->row();
-        } else if (($query2->num_rows()) > 0) {
-            return $query2->row();
+        } elseif ($query3->num_rows() > 0) {
+            return $query3->row();
         }
     }
 
+    public function loadproductbyserial($product, $location) {
+        //  From productserialstock
+        $query1 = $this->db->select('
+                product.*,
+                productprice.ProductPrice,
+                productserialstock.SerialNo,
+                productserialstock.Quantity,
+                goodsreceivenotedtl.GRN_UnitCost,
+                supplier.SupName,
+                goodsreceivenotehed.GRN_No,
+                goodsreceivenotehed.GRN_DateORG,
+                location.location
+            ')
+            ->from('product')
+            ->join('productserialstock', 'productserialstock.ProductCode = product.ProductCode')
+            ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.SerialNo = productserialstock.SerialNo')
+            ->join('goodsreceivenotehed', 'goodsreceivenotedtl.GRN_No = goodsreceivenotehed.GRN_No')
+            ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'left')
+            ->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode', 'left')
+            ->join('location', 'location.location_id = productserialstock.Location', 'left')
+            ->where('productserialstock.SerialNo', $product)
+            ->where('productserialstock.Location', $location)
+            ->get();
+
+        //  From productserialemistock
+        
+        $query2 = $this->db->select('
+                product.*,
+                productprice.ProductPrice,
+                productserialemistock.SerialNo,
+                productserialemistock.EmiNo,
+                productserialemistock.Quantity,
+                goodsreceivenotedtl.GRN_UnitCost,
+                supplier.SupName,
+                goodsreceivenotehed.GRN_No,
+                goodsreceivenotehed.GRN_DateORG,
+                location.location
+            ')
+            ->from('product')
+            ->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode')
+            ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.SerialNo = productserialemistock.SerialNo')
+            ->join('goodsreceivenotehed', 'goodsreceivenotedtl.GRN_No = goodsreceivenotehed.GRN_No')
+            ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'left')
+            ->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode', 'left')
+            ->join('location', 'location.location_id = productserialemistock.Location', 'left')
+            ->group_start()
+                ->where('productserialemistock.SerialNo', $product)
+                ->or_where('productserialemistock.EmiNo', $product)
+            ->group_end()
+            ->where('productserialemistock.Location', $location)
+            ->get();
+
+        //  From productimeistock
+        $query3 = $this->db->select('
+                product.*,
+                productprice.ProductPrice,
+                productimeistock.EmiNo,
+                productimeistock.Quantity,
+                goodsreceivenotedtl.GRN_UnitCost,
+                supplier.SupName,
+                goodsreceivenotehed.GRN_No,
+                goodsreceivenotehed.GRN_DateORG,
+                location.location
+            ')
+            ->from('product')
+            ->join('productimeistock', 'productimeistock.ProductCode = product.ProductCode')
+            ->join('goodsreceivenotedtl', 'goodsreceivenotedtl.EmiNo = productimeistock.EmiNo')
+            ->join('goodsreceivenotehed', 'goodsreceivenotedtl.GRN_No = goodsreceivenotehed.GRN_No')
+            ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'left')
+            ->join('supplier', 'supplier.SupCode = goodsreceivenotehed.GRN_SupCode', 'left')
+            ->join('location', 'location.location_id = productimeistock.Location', 'left')
+            ->where('productimeistock.EmiNo', $product)
+            ->where('productimeistock.Location', $location)
+            ->get();
+
+        // Return the first matching result
+        if ($query1->num_rows() > 0) {
+            return $query1->row();
+        } elseif ($query2->num_rows() > 0) {
+            return $query2->row();
+        } elseif ($query3->num_rows() > 0) {
+            return $query3->row();
+        }
+
+        return null;
+    }
+
+
     public function loadsalebyserial($product, $location) {
-        $query2 = $this->db->select('invoicedtl.*,invoicehed.*,location.location')->from('invoicedtl')
-                ->where('invoicedtl.InvSerialNo', $product)
-                ->where('invoicehed.InvIsCancel', 0)
-                ->join('invoicehed', 'invoicedtl.InvNo = invoicehed.InvNo')
-                ->join('location', 'location.location_id = invoicehed.InvLocation')
-                ->get();
+       
         $query1 = $this->db->select('invoicedtl.*,invoicehed.*,location.location')->from('invoicedtl')
                 ->where('invoicedtl.InvSerialNo', $product)
                 ->where('invoicehed.InvLocation', $location)
@@ -413,8 +483,7 @@ class Imei_model extends CI_Model {
                 ->get();
         if (($query1->num_rows()) > 0) {
             return $query1->row();
-        } else if (($query2->num_rows()) > 0) {
-            return $query2->row();
+      
         }
     }
     

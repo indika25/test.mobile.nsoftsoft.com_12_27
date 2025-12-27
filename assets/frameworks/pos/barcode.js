@@ -143,10 +143,10 @@ $(document).ready(function() {
     });
 
 //==============load products========================
-    $("#itemCode").autocomplete({
+     $("#itemCode").autocomplete({
         source: function(request, response) {
             $.ajax({
-                url: 'loadproductjson',
+                url: 'loadproductjsonGrn',
                 dataType: "json",
                 data: {
                     q: request.term,
@@ -155,7 +155,7 @@ $(document).ready(function() {
                     supcode: supcode,
                     row_num: 1,
                     action: "getActiveProductCodes",
-                    price_level: price_level
+                    
                 },
                 success: function(data) {
                     response($.map(data, function(item) {
@@ -173,17 +173,30 @@ $(document).ready(function() {
         select: function(event, ui) {
 //            var names = (ui.item.label);
             itemCode = ui.item.value;
-//        alert(itemCode);
+        //alert(itemCode);
             $.ajax({
                 type: "post",
-                url: "../../admin/Product/getProductById",
-                data: {proCode: itemCode, prlevel: price_level},
+                url: "../../admin/Product/getProductByIdforGrnnew",
+                data: {proCode: itemCode, location: 1},
                 success: function(json) {
                     var resultData = JSON.parse(json);
+//                    alert(resultData.serial);
                     if (resultData) {
-//                    $("#modelBilling").modal('toggle');
-                        loadProModal(resultData.Prd_Description, resultData.ProductCode, resultData.ProductPrice, resultData.Prd_CostPrice, 0, resultData.IsSerial, resultData.IsFreeIssue, resultData.IsOpenPrice, resultData.IsMultiPrice, resultData.Prd_UPC, resultData.WarrantyPeriod);
-//                    $('html, body').animate({scrollTop: $('#cart-table-body').offset().top}, 'slow');
+
+                        $.each(resultData.serial, function(key, value) {
+                            var serialNoArrIndex1 = $.inArray(value, serialnoarr);
+                            if (serialNoArrIndex1 < 0) {
+                                serialnoarr.push(value);
+                            }
+                        });
+                        var wholesalePrice = resultData.productwhole?.ProductPrice ?? 0;
+                        autoSerial = resultData.product.IsRawMaterial;
+                        loadProModal(resultData.product.Prd_Description, resultData.product.ProductCode, resultData.product.ProductPrice, 
+                            resultData.product.Prd_CostPrice, 0, resultData.product.IsSerial, resultData.product.IsFreeIssue, resultData.product.IsOpenPrice, 
+                            resultData.product.IsMultiPrice, resultData.product.Prd_UPC, resultData.product.WarrantyPeriod, resultData.product.IsRawMaterial, 
+                            resultData.product.branchCost,wholesalePrice);
+                        //  loadProModal(resultData.Prd_Description, resultData.ProductCode, resultData.ProductPrice, resultData.Prd_CostPrice, 0, resultData.IsSerial, resultData.IsFreeIssue, resultData.IsOpenPrice, resultData.IsMultiPrice, resultData.Prd_UPC, resultData.WarrantyPeriod);
+
                     } else {
                         $("#errGrid").show();
                         $("#errGrid").html('Product not found ').addClass('alert alert-danger alert-dismissible alert-sm').fadeOut(2000);
@@ -198,7 +211,6 @@ $(document).ready(function() {
             });
         }
     });
-
 //load model
     function loadProModal(mname, mcode, msellPrice, mcostPrice, mserial, misSerial, misFree, isOP, isMP, upc, waranty) {
 //        clearProModal();

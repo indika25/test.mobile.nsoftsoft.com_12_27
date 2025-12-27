@@ -34,25 +34,30 @@ class Purchase_model extends CI_Model {
     }
 
     public function loadproductjson($query,$sup,$supCode) {
+      
         if($sup!=0){
-            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice')
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock,product.Prd_Supplier')
                     ->from('product')
-                    ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
                     ->where('product.Prd_Supplier', $supCode)
                     ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->where('pricestock.Stock !=', 0)
                     ->limit(50)->get();
         }else{
-            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice')
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock,product.Prd_Supplier')
                     ->from('product')
-                    ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                    ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
+                    
                     ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
+                    ->where('pricestock.Stock !=', 0)
                     ->limit(50)->get();
         }
 
         if ($query1->num_rows() > 0) {
             foreach ($query1->result_array() as $row) {
-                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description']." = Rs.".$row['ProductPrice']));
+                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description']." = Rs.".$row['Price']));
                 $new_row['value'] = htmlentities(stripslashes($row['ProductCode']));
+                 $new_row['price'] = htmlentities(stripslashes($row['Price']));
                 $row_set[] = $new_row; //build an array
             }
             echo json_encode($row_set); //format the array into json data
@@ -61,17 +66,17 @@ class Purchase_model extends CI_Model {
 
     public function loadproductjsonbygrn($query,$sup,$supCode,$grn) {
         if($grn!='0'){
-            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice')
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock')
                     ->from('goodsreceivenotedtl')
                     ->join('product', 'product.ProductCode = goodsreceivenotedtl.GRN_Product', 'INNER')
-                    ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                   ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
                     ->where('goodsreceivenotedtl.GRN_No', $grn)
                     ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
                     ->limit(50)->get();
         }else{
-            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,productprice.ProductPrice')
+            $query1 =$this->db->select('product.ProductCode,product.Prd_Description,pricestock.Price,pricestock.Stock')
                     ->from('product')
-                    ->join('productprice', 'productprice.ProductCode = product.ProductCode', 'INNER')
+                   ->join(' pricestock', 'pricestock.PSCode = product.ProductCode', 'INNER')
                     ->where('product.Prd_Supplier', $supCode)
                     ->like("CONCAT(' ',product.ProductCode,product.Prd_Description,product.BarCode)", $query ,'left')
                     ->limit(50)->get();
@@ -79,8 +84,9 @@ class Purchase_model extends CI_Model {
 
         if ($query1->num_rows() > 0) {
             foreach ($query1->result_array() as $row) {
-                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description']." = Rs.".$row['ProductPrice']));
+                $new_row['label'] = htmlentities(stripslashes($row['Prd_Description']." = Rs.".$row['Price']));
                 $new_row['value'] = htmlentities(stripslashes($row['ProductCode']));
+                 $new_row['price'] = htmlentities(stripslashes($row['Price']));
                 $row_set[] = $new_row; //build an array
             }
             echo json_encode($row_set); //format the array into json data
@@ -254,7 +260,8 @@ class Purchase_model extends CI_Model {
         $grnno=$_POST['grn_no'];
         $sup_code = $_POST['sup_code'];
         $total_amount = $_POST['total_amount'];
-
+        $emi_noArr = json_decode($post['emi_no']);
+        $isEmiArr = json_decode($post['isEmi']);
         
         
         $this->db->trans_start();
@@ -272,38 +279,68 @@ class Purchase_model extends CI_Model {
                 'PRN_Selling' => $sell_priceArr[$i],
                 'PRN_Amount' => $totalAmountArr[$i],
                 'IsSerial' => $isSerialArr[$i],
-                'Serial' => $serial_noArr[$i]);
+                'Serial' => $serial_noArr[$i],
+                'EmiNo'=>$emi_noArr[$i],
+                'IsEmi'=>$isEmiArr[$i],
+                
+            );
             $this->db->insert('purchasereturnnotedtl', $grnDtl);
         
-            //update price and product stock
-            $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location','$serial_noArr[$i]',0,0,0)");
-             //update serial stock
-             $this->db->query("UPDATE productserialstock AS S
-                                INNER JOIN  purchasereturnnotedtl AS D ON S.ProductCode=D.PRN_Product
-                                SET S.Quantity=0
-                                WHERE S.SerialNo = D.Serial AND D.IsSerial = 1 AND D.PRN_No = '$prnNo'");
+            //update price stock
+            $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','1','$cost_priceArr[$i]','$sell_priceArr[$i]','$location','0','0','0','0')");
+            // $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location')");
 
-             //update grn details
-            if($grnno!='' || $grnno!=0){
-                $this->db->update('goodsreceivenotedtl', array('GRN_ReturnQty'=>$qtyArr[$i]),array('GRN_No'=>$grnno,'GRN_Product'=>$product_codeArr[$i],'SerialNo'=>$serial_noArr[$i]));
+            //update product stock
+             $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$product_codeArr[$i]','$qtyArr',0,'$location')");
+
+            //update price and product stock
+//            $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$product_codeArr[$i]','$qtyArr[$i]','$price_levelArr[$i]','$cost_priceArr[$i]','$sell_priceArr[$i]','$location','$serial_noArr[$i]',0,0,0)");
+             //update serial stock
+            //  $this->db->query("UPDATE productserialstock AS S
+            //                     INNER JOIN  purchasereturnnotedtl AS D ON S.ProductCode=D.PRN_Product
+            //                     SET S.Quantity=0
+            //                     WHERE S.SerialNo = D.Serial AND D.IsSerial = 1 AND D.PRN_No = '$prnNo'");
+
+            if ($isSerialArr[$i] == 1 && $isEmiArr[$i] == 0) {
+                        // Serial only
+                $this->db->update('productserialstock', ['Quantity' => 0], ['ProductCode' => $product_codeArr[$i],'Location'=> $location,'SerialNo'=> $serial_noArr[$i]]);
+
+            } elseif ($isSerialArr[$i] == 0 && $isEmiArr[$i] == 1) {
+                        // EMI only
+                $this->db->update('productimeistock', ['Quantity' => 0], ['ProductCode' =>$product_codeArr[$i],'Location'=> $location,'EmiNo'=> $emi_noArr[$i]]);
+
+            } elseif ($isSerialArr[$i] == 1 && $isEmiArr[$i] == 1) {
+                        // Serial + EMI
+                $this->db->update('productserialemistock', ['Quantity' => 0], ['ProductCode' => $product_codeArr[$i],'Location'=> $location,'SerialNo'=> $serial_noArr[$i]]);
+
             }
+             //update grn details
+           if($grnno!='' || $grnno!=0){
+                if ($isSerialArr[$i] == 1 && $isEmiArr[$i] == 0) {
+                    $this->db->update('goodsreceivenotedtl', array('GRN_ReturnQty'=>1),array('GRN_No'=>$grnno,'GRN_Product'=>$product_codeArr[$i],'SerialNo'=>$serial_noArr[$i]));
+                }else if ($isSerialArr[$i] == 0 && $isEmiArr[$i] == 1) {
+                    $this->db->update('goodsreceivenotedtl', array('GRN_ReturnQty'=>1),array('GRN_No'=>$grnno,'GRN_Product'=>$product_codeArr[$i],'SerialNo'=>$emi_noArr[$i]));
+                }else if ($isSerialArr[$i] == 1 && $isEmiArr[$i] == 1) {
+                    $this->db->update('goodsreceivenotedtl', array('GRN_ReturnQty'=>1),array('GRN_No'=>$grnno,'GRN_Product'=>$product_codeArr[$i],'SerialNo'=>$serial_noArr[$i]));
+                }
+           }
         }
 
-        if($grnno!='' || $grnno!=0){
-            $grnCredit=0;
-            //update supplier outstanding
-            $this->db->query("CALL SPT_UPDATE_SUPOUTSTAND_RBACK('$sup_code','$total_amount','$total_amount')");
-
-            $this->db->update('goodsreceivenotehed', array('GRN_ReturnAmount'=>($total_amount)),array('GRN_No'=>($grnno)));
-
-            $grnCredit = $this->db->select('CreditAmount')->from('creditgrndetails')->where('GRNNO',$grnno)->get()->row()->CreditAmount;
-
-            if($grnCredit>0){
-                $creditAmount = $grnCredit-$total_amount;
-                //update credit invoices
-                $this->db->update('creditgrndetails', array('CreditAmount'=>($creditAmount)),array('GRNNO'=>($grnno)));
-            }
-         }
+//        if($grnno!='' || $grnno!=0){
+//            $grnCredit=0;
+//            //update supplier outstanding
+//            $this->db->query("CALL SPT_UPDATE_SUPOUTSTAND_RBACK('$sup_code','$total_amount','$total_amount')");
+//
+//            $this->db->update('goodsreceivenotehed', array('GRN_ReturnAmount'=>($total_amount)),array('GRN_No'=>($grnno)));
+//
+//            $grnCredit = $this->db->select('CreditAmount')->from('creditgrndetails')->where('GRNNO',$grnno)->get()->row()->CreditAmount;
+//
+//            if($grnCredit>0){
+//                $creditAmount = $grnCredit-$total_amount;
+//                //update credit invoices
+//                $this->db->update('creditgrndetails', array('CreditAmount'=>($creditAmount)),array('GRNNO'=>($grnno)));
+//            }
+//         }
         $this->bincard($grnno,11,'Created');//update bincard
         $this->db->insert('purchasereturnnotehed', $grnHed);
         $this->update_max_code('PRN');

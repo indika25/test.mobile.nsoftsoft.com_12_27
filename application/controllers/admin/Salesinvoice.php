@@ -7,6 +7,7 @@ class Salesinvoice extends Admin_Controller {
         /* Load :: Common */
         $this->load->helper('number');
         $this->load->model('admin/Job_model');
+         $this->load->model('admin/Stock_model');
         date_default_timezone_set("Asia/Colombo");
          $this->load->library('Datatables');
 
@@ -106,7 +107,9 @@ class Salesinvoice extends Admin_Controller {
                 }
                 $this->data['job']=$this->db->select('jobinvoicehed.*')->from('jobinvoicehed')->where('jobinvoicehed.JCustomer',$cusCode)->where('jobinvoicehed.IsCancel',0)->get()->result();
             $this->data['invCus']= $this->db->select('customer.*')
-                ->from('customer')->join('vehicledetail','vehicledetail.CusCode=customer.CusCode')->where('customer.CusCode',$cusCode)->get()->row();
+                ->from('customer')
+//                ->join('vehicledetail','vehicledetail.CusCode=customer.CusCode')
+                ->where('customer.CusCode',$cusCode)->get()->row();
                 $this->data['invVehi']= $this->db->select('vehicledetail.ChassisNo,vehicledetail.contactName,make.make,model.model')->from('vehicledetail')->join('make','make.make_id=vehicledetail.Make','left')->join('model','model.model_id=vehicledetail.Model','left')->where('vehicledetail.RegNo',$regNo)->get()->row();
 
              
@@ -416,7 +419,7 @@ class Salesinvoice extends Admin_Controller {
 
          $location = $_SESSION['location'];
         $this->datatables->select('salesinvoicehed.*,customer.CusName,customer.MobileNo');
-        $this->datatables->from('salesinvoicehed')->join('customer','customer.CusCode=salesinvoicehed.SalesCustomer');
+        $this->datatables->from('salesinvoicehed')->join('customer','customer.CusCode=salesinvoicehed.SalesCustomer')->where('SalesLocation',$location);
 
         echo $this->datatables->generate();
         die();
@@ -424,6 +427,8 @@ class Salesinvoice extends Admin_Controller {
 
     public function view_sales_invoice($inv=null) {
 
+
+     
             $this->load->model('admin/Salesinvoice_model');
             $invNo=base64_decode($inv);
             /* Title Page */
@@ -509,8 +514,7 @@ class Salesinvoice extends Admin_Controller {
 
             $this->load->model('admin/Salesinvoice_model');
             $invNo=base64_decode($inv);
-            /* Title Page */
-
+          
             $id = isset($_GET['id'])?$_GET['id']:NULL;
             $type = isset($_GET['type'])?$_GET['type']:NULL;
             $sup = isset($_GET['sup'])?$_GET['sup']:0;
@@ -524,10 +528,16 @@ class Salesinvoice extends Admin_Controller {
             $this->data['breadcrumb'] = $this->breadcrumbs->show();
 
             $location = $this->db->select('SalesLocation')->from('salesinvoicehed')->where('SalesInvNo', $invNo)->get()->row()->SalesLocation;
+          
+
             $id3 = array('CompanyID' => $location);
             $this->data['company'] = $this->Job_model->get_data_by_where('company', $id3);
+
+         
             
             $this->data['jobtypes'] = $this->db->select()->from('jobtype')->order_by("jobtype_order", "asc")->get()->result();
+
+                 
             $this->data['id'] = $id;
             $this->data['type'] = $type;
             $this->data['sup'] = $sup;
@@ -537,24 +547,40 @@ class Salesinvoice extends Admin_Controller {
             $this->data['titleno'] = $invNo;
             $this->data['balancetxt'] = 'TOTAL PAYABLE';
             $balance=$this->db->select('SalesCreditAmount')->from('salesinvoicehed')->where('SalesInvNo',$invNo)->get()->row()->SalesCreditAmount;
+           
             $this->data['balance'] = "Rs. ".number_format($balance,2);
             
 
             $this->data['invType']= $this->db->select('SalesInvType')->from('salesinvoicehed')->where('SalesInvNo',$invNo)->get()->row();
+            
+           
+           
 
             $this->data['invHed']= $this->db->select('salesinvoicehed.*,users.first_name,users.last_name,users.last_name ,vehicle_company.VComName')
                 ->from('salesinvoicehed')->join('users','salesinvoicehed.SalesInvUser=users.id','left')->join('vehicle_company','vehicle_company.VComId=salesinvoicehed.SalesInsCompany','left')
                 ->where('SalesInvNo',$invNo)->get()->row();
+
+          
+
+
             $IsPayment =  $this->db->select('InvNo')->from('invoicesettlementdetails')->where('InvNo',$invNo)->get()->num_rows();
             if($IsPayment>0){
                  $this->data['ispayment']=$IsPayment;
             }else{
                 $this->data['ispayment']=0;
             }
+
             $cusCode =  $this->db->select('SalesCustomer')->from('salesinvoicehed')->where('SalesInvNo',$invNo)->get()->row()->SalesCustomer;
+
+
+        
+
             $regNo =  $this->db->select('SalesVehicle')->from('salesinvoicehed')->where('SalesInvNo',$invNo)->get()->row()->SalesVehicle;
+               
                 
             $this->data['invCus']= $this->db->select('customer.*')->from('customer')->where('customer.CusCode',$cusCode)->get()->row();
+           
+            
             $this->data['invVehi']= $this->db->select('vehicledetail.ChassisNo,vehicledetail.contactName,make.make,model.model')->from('vehicledetail')->join('make','make.make_id=vehicledetail.Make','left')->join('model','model.model_id=vehicledetail.Model','left')->where('CusCode',$cusCode)->where('vehicledetail.RegNo',$regNo)->get()->row();
 
             $this->data['invSales']= $this->db->select('salespersons.RepName')
@@ -567,6 +593,8 @@ class Salesinvoice extends Admin_Controller {
                     ->where('salesinvoicedtl.SalesInvNo', $invNo)
                     ->order_by('salesinvoicedtl.SalesInvLineNo','ASC')
                     ->get()->result();
+
+                    
              //invoice cancel
              $this->data['invCancel']=$this->db->select('cancelsalesinvoice.*,users.first_name,users.last_name')->from('cancelsalesinvoice')->join('users', 'cancelsalesinvoice.CancelUser = users.id', 'INNER')->where('cancelsalesinvoice.SalesInvoiceNo', $invNo)->order_by('CancelDate','DESC')->get()->row();
 
@@ -575,14 +603,11 @@ class Salesinvoice extends Admin_Controller {
 
             $this->data['invDtlArr']=$this->Salesinvoice_model->getSalesInvoiceDtlbyid($invNo);
             $this->data['returnDtlArr']=$this->Salesinvoice_model->getSalesReturnDtlbyid($invNo);
-
-             $this->data['sale']=$this->db->select('salesinvoicehed.*,salesinvoicepaydtl.*')->from('salesinvoicehed')->join('salesinvoicepaydtl','salesinvoicepaydtl.SalesInvNo=salesinvoicehed.SalesInvNo')->where('salesinvoicehed.SalesCustomer',$cusCode)->where('salesinvoicehed.InvIsCancel',0)->get()->result();
-// print_r($this->data['returnDtlArr']);die;
-           // $this->data['invType']= $this->db->select('SalesInvType')->from('salesinvoicehed')->where('SalesInvNo',$invNo)->get()->result();
-            
+ 
+            $this->data['sale']=$this->db->select('salesinvoicehed.*,salesinvoicepaydtl.*')->from('salesinvoicehed')->join('salesinvoicepaydtl','salesinvoicepaydtl.SalesInvNo=salesinvoicehed.SalesInvNo')->where('salesinvoicehed.SalesCustomer',$cusCode)->where('salesinvoicehed.InvIsCancel',0)->limit(20)->get()->result();
             $this->data['term'] = $this->db->select()->from('invoice_condition')->where('InvType', 1)->get()->result();      
             $this->template->admin_render('admin/sales/view-sales-invoice_1', $this->data);
-        
+    
     }
 
 
@@ -646,10 +671,8 @@ class Salesinvoice extends Admin_Controller {
              $this->data['invDtlArr']=$this->Salesinvoice_model->getSalesInvoiceDtlbyid($invNo);
              $this->data['returnDtlArr']=$this->Salesinvoice_model->getSalesReturnDtlbyid($invNo);
               $this->data['term'] = $this->db->select()->from('invoice_condition')->where('InvType', 1)->get()->result(); 
-
-               $this->data['sale']=$this->db->select('salesinvoicehed.*,salesinvoicepaydtl.*')->from('salesinvoicehed')->join('salesinvoicepaydtl','salesinvoicepaydtl.SalesInvNo=salesinvoicehed.SalesInvNo')->where('salesinvoicehed.SalesCustomer',$cusCode)->where('salesinvoicehed.InvIsCancel',0)->get()->result();
-                   
-            $this->template->admin_render('admin/sales/view-sales-invoice_1', $this->data);
+     $this->data['sale']=$this->db->select('salesinvoicehed.*,salesinvoicepaydtl.*')->from('salesinvoicehed')->join('salesinvoicepaydtl','salesinvoicepaydtl.SalesInvNo=salesinvoicehed.SalesInvNo')->where('salesinvoicehed.SalesCustomer',$cusCode)->where('salesinvoicehed.InvIsCancel',0)->get()->result();
+                $this->template->admin_render('admin/sales/view-sales-invoice_1', $this->data);
     }
 
     public function email_invoice($inv=null){
@@ -749,7 +772,7 @@ class Salesinvoice extends Admin_Controller {
     public function view_sales_invoice_pdf($inv=null) {
 
             $this->load->model('admin/Salesinvoice_model');
-            $this->load->model('admin/Salesinvoice_model');
+        
             $invNo=base64_decode($inv);
             /* Title Page */
 
@@ -814,10 +837,10 @@ class Salesinvoice extends Admin_Controller {
             $this->load->helper('file');
             $this->load->helper(array('dompdf'));
 
-            // $this->load->view('admin/sales/view-sales-invoice-pdf', $this->data);
+            $this->load->view('admin/sales/view-sales-invoice-pdf', $this->data);
             $html = $this->load->view('admin/sales/view-sales-invoice-pdf2', $this->data, true);
-            // echo $html;
-            pdf_create($html, 'filename', TRUE,'A4');die;
+        
+            pdf_create($html, 'filename', TRUE,'A6');die;
     }
 
 
@@ -845,7 +868,7 @@ class Salesinvoice extends Admin_Controller {
             $this->load->model('admin/Salesinvoice_model');
             $id3 = array('CompanyID' => $location);
             $this->data['company'] = $this->Job_model->get_data_by_where('company', $id3);
-
+            $this->data['pricelevels'] = $this->db->select()->from('pricelevel')->get()->result();
             $this->data['worktype'] = $this->db->select()->from('jobtype')->get()->result();
             $this->data['jobdesc'] = $this->db->select()->from('jobdescription')->get()->result();
             $this->data['jobtype'] = $this->db->select()->from('estimate_jobtype')->get()->result();
@@ -892,9 +915,20 @@ class Salesinvoice extends Admin_Controller {
 
     public function loadproductjson() {
         $query = $_GET['q'];
+        $pLevel = $_GET['price_level'];
+       
         $sup= 0;$supCode= '';
          $this->load->model('admin/Grn_model');
-        echo $this->Grn_model->loadproductjson($query,$sup,$supCode);
+        echo $this->Grn_model->loadproductjson($query,$sup,$supCode,$pLevel);
+        die;
+    }
+
+    public function loadwholesalepriceproductjson() {
+        $query = $_GET['q'];
+        $pLevel = $_GET['price_level'];
+        $sup= 0;$supCode= '';
+         $this->load->model('admin/Grn_model');
+        echo $this->Grn_model->loadwholesalepriceproductjson($query,$sup,$supCode,$pLevel);
         die;
     }
 
@@ -1403,22 +1437,20 @@ $arr[] =null;
         $receiver_name = $_POST['receiver_name'];
         $receiver_nic = $_POST['receiver_nic'];
         $payRemark = $_POST['pay_remark'];
-        $cashAmount = $_POST['cashAmount'];
+        $cashAmount = floatval($_POST['cashAmount']);
         $creditAmount = $_POST['creditAmount'];
         $chequeAmount = $_POST['chequeAmount'];
         $advanceAmount = $_POST['advance_amount'];
         $advancePayNo = $_POST['advance_pay_no'];
         $returnAmount = $_POST['return_amount'];
-        $returnPayNo = $_POST['return_payment_no'];
-//        var_dump($returnAmount,$returnPayNo);die();
+        $returnPayNo = $_POST['return_payment_no'];     
         $companyAmount = 0;
         $customer = $_POST['cusCode'];
-        // $returnPayNo = $_POST['return_payment_no'];
         $cardAmount = $_POST['cardAmount'];
         $bankAmount = $_POST['bank_amount'];
         $bank_account = $_POST['bankacc'];
         $totalPay=$_POST['totalNet'];
-
+         $mchange = 0;
         $chequeNo = $_POST['chequeNo'];
         $chequeReference = $_POST['chequeReference'];
         $chequeRecivedDate = $_POST['chequeRecivedDate'];
@@ -1428,6 +1460,17 @@ $arr[] =null;
         $chequeDate=date_create($chequeDate);
         $chequeDate = date_format($chequeDate,"Y-m-d");
         $bank = $_POST['bank'];
+        if($advanceAmount >0 ){
+            if($advanceAmount >$mchange){
+                $mchange = $_POST['mchange'];
+                
+            }else{
+                $mchange = 0;
+            }
+        }else{
+            $mchange = $_POST['mchange'];
+        }
+        
 
         $customer_payment = $cashAmount+$cardAmount+$chequeAmount+$advanceAmount+$bankAmount+$returnAmount;
 
@@ -1436,7 +1479,6 @@ $arr[] =null;
                 $cashAmount=$cashAmount-($customer_payment+$creditAmount-$totalPay);
             }
         }
-
 
 
         if($partInvType==1){
@@ -1449,21 +1491,21 @@ $arr[] =null;
             $data['EstType'] = isset($_POST['estimate_type']) ? $_POST['estimate_type'] : 0;
             $data['JInsCompany'] = isset($_POST['insCompany']) ? $_POST['insCompany'] : 0;
             $data['JobEstimateNo'] = $_POST['estimateNo'];
+         
             $data['JobSupplimentry'] = $supplimentNo;
             $data['JobCardNo'] = $_POST['jobNo'];
+           
             if( $action==1){
                 $data['JobInvoiceDate'] = $_POST['date'];
             }
 
             if($customer_payment>=$totalPay){
                 $isComplete=1;
-                // $this->db->update('jobinvoicehed',array('IsCompelte' => 1),array('JobInvNo' => $invoiceNo));
             }else{
                 $isComplete=0;
 
             }
-            
-            // $data['JobInvoiceDate'] = $_POST['date'];
+          
             $data['JobLocation'] = $location;
             $data['JobTotalAmount'] = $_POST['estimateAmount'];
             $data['JJobType'] = isset($_POST['job_type']) ? $_POST['job_type'] : 0;
@@ -1489,7 +1531,7 @@ $arr[] =null;
             $data['JobBankAmount']=$bankAmount;
             $data['JobCashAmount']=$cashAmount;
             $data['JobCreditAmount']=$creditAmount;
-            // $data['JobCompanyAmount']=$_POST['mileageoutUnit'];
+   
             $data['JobChequeAmount']=$chequeAmount;
             $data['JobReturnAmount']=$_POST['mileageoutUnit'];
             $data['JobReturnPayment']=$returnAmount;
@@ -1498,15 +1540,11 @@ $arr[] =null;
             $data['JobAdvance']=$advanceAmount;
             $data['JobComCus']=$compayto;
             $data['JobCommsion']=$com_amount;
-            // $data['JobAdvance']=$_POST['mileageoutUnit'];
-            // $data['JobAdvance']=$_POST['mileageoutUnit'];
-            // JobComCus
-
-            //////////////////////////////////////////////
+            $data['Blance']=$mchange;
+     
             $data1['OdoOut']=$_POST['mileageout'];
             $data1['OdoOutUnit']=$_POST['mileageoutUnit'];
-             //////////////////////////////////////////////
-
+        
             $tempInvoiceNo = $_POST['tempInvoiceNo'];
 
             $net_priceArr = json_decode($_POST['net_price']);
@@ -1531,13 +1569,24 @@ $arr[] =null;
             $estPriceArr = json_decode($_POST['estPrice']);
             $costPriceArr = json_decode($_POST['costPrice']);
             $estLineNoArr = json_decode($_POST['estLineNo']);
+            $serialArray = json_decode($_POST['serialArray']);
+            $emiArray = json_decode($_POST['emiArray']);
+            $isserialArray = json_decode($_POST['isserialArray']);
+            $isemiArray = json_decode($_POST['isemiArray']);
+            
+
+
+
 
             $EstJobType=0;
             if($_POST['estimateNo']!='' || $_POST['estimateNo']!=0){
                 $EstJobType = $this->db->select('EstJobType')->from('estimatehed')->where('EstCustomer', $_POST['cusCode'])->where('EstRegNo', $_POST['regNo'])->where('EstimateNo', $_POST['estimateNo'])->get()->row()->EstJobType;
             }
-
+  
+       
             if($action==1){
+
+
                 if($EstJobType!=''){
                     //Insurance
                     $data['JobInvNo'] = $this->Job_model->get_max_code('JobInvoice'.$location);
@@ -1546,15 +1595,16 @@ $arr[] =null;
                     $data['JobInvNo'] = $this->Job_model->get_max_code('JobInvoice'.$location);
                 }
                 $invoiceNo=$data['JobInvNo'] ;
-                $invDate =$data['JobInvoiceDate'] ;
-                // if($supplimentNo==0 || $supplimentNo==''){
-                    // $data['JobInvNo'] = $this->Job_model->get_max_code('JobInvoice');
-                // }else{
-                //     $data['JobInvNo'] = $_POST['invoiceNo'];
-                //     $data['IsEdit'] = 1;
-                // }
+     
+                $invDate =$data['JobInvoiceDate'] ;    
+                
+              
+
                 $this->db->trans_start();
-                $this->db->insert('jobinvoicehed',$data);
+             $this->db->insert('jobinvoicehed', $data);
+               
+
+             
                 $estTimestmp = '';
                 for ($i = 0; $i < count($work_idArr); $i++) {
                     $totalCost+=($qtyArr[$i]*$costPriceArr[$i]);
@@ -1573,6 +1623,7 @@ $arr[] =null;
                         'EstLineNo'=> $estLineNoArr[$i],
                         'JobLocation'=> $location,
                         'JobDescription' => $descArr[$i],
+                        'SalesSerialNo' => $serialArray[$i],
                         'JobQty' => $qtyArr[$i],
                         'JobPrice' => $sell_priceArr[$i],
                         'JobCost' => $costPriceArr[$i],
@@ -1587,20 +1638,24 @@ $arr[] =null;
                         'JobDisValue' => $proDiscountArr[$i],
                         'JobDisPercentage' =>$disPrecentArr[$i],
                         'JobDiscountType' => $discountTypeArr[$i],
-                        'JobNetAmount' => $net_priceArr[$i],
+                        'EmiNo' => isset($emiArray[$i]) ? $emiArray[$i] : 0,
+                        'IsSerial' => isset($isserialArray[$i]) ? $isserialArray[$i] : 0,
+                        'IsEmi' => isset($isemiArray[$i]) ? $isemiArray[$i] : 0,
                         'JobinvoiceTimestamp' => $estTimestmp
                         );
-                     $this->db->insert('jobinvoicedtl',$jobDtl);
+                        $this->db->insert('jobinvoicedtl',$jobDtl);
+                     
                       if($job_idArr[$i]==2){
-                        $this->db->query("CALL SPP_UPDATE_PRICE_STOCK('$work_idArr[$i]','$qtyArr[$i]','1','0','$sell_priceArr[$i]','$location','','0','0','0')");
-                    }
+                       
+                       }
                 }
                 //odoout update
                 $this->db->update('jobcardhed',$data1,array('JobCardNo' => $data['JobCardNo']));
                 // update job cost
                 $this->db->update('jobinvoicehed',array('JobCostAmount' => $totalCost),array('JobInvNo' => $data['JobInvNo']));
-                // update temparary invoice
-                $this->db->update('tempjobinvoicehed',array('IsInvoice' =>1),array('JobInvNo' => $tempInvoiceNo));
+                // update issue Note
+                $this->db->update('issuenote_hed',array('IsComplete' =>1),array('SalesPONumber' => $data['JobCardNo']));
+                
                 //job end
                 $endDate = date("Y-m-d H:i:s");
                 $this->db->update('jobcardhed',array('endDate' =>$endDate,'IsCompelte' =>2),array('JobCardNo' => $data['JobCardNo']));
@@ -1658,17 +1713,16 @@ $arr[] =null;
             'PayRemark'=>$payRemark,
             'ReceiptNo'=>$advancePayNo);
 
-        // insert invoice payment
-        if($advanceAmount>0){
+         if($advanceAmount>0){
+           
+            $mchange = str_replace(',', '', $mchange);
              $this->db->insert('jobinvoicepaydtl', $advancePay);
-
-             //release advance payment
-             $this->db->update('customerpaymentdtl',array('IsRelease'=>1),array('CusPayNo'=>$advancePayNo));
-
+            $this->db->update('jobcardhed',array('Advance' => $mchange),array('JobCardNo' => $data['JobCardNo']));
+            
+     
          }
 
-        // insert invoice payment
-          $returnPay = array(
+        $returnPay = array(
                     'JobInvNo'=>$invoiceNo,
                     'JobInvDate'=>$invDate,
                     'JobInvPayType'=>'Return',
@@ -1851,6 +1905,7 @@ $arr[] =null;
                         'EstLineNo'=> $estLineNo,
                         'JobLocation'=> $location,
                         'JobDescription' => $descArr[$i],
+                        'SalesSerialNo' => $serialArray[$i],
                         'JobQty' => $qtyArr[$i],
                         'JobPrice' => $sell_priceArr[$i],
                         'JobCost' => $costPriceArr[$i],
@@ -2141,15 +2196,10 @@ $arr[] =null;
             $partData['InvLoyaltyAmount'] = 0;
             $partData['InvStarPoints'] = 0;
             $partData['InvChequeAmount'] = 0;
-            // $partData['InvAmount'] = 0;
             $partData['InvIsVat'] =$_POST['isTotalVat'];
             $partData['InvIsNbt'] =$_POST['isTotalNbt'];
             $partData['InvNbtRatioTotal'] =$_POST['isTotalNbt'];
-            // $partData['InvNbtAmount'] = 0;
-            // $partData['InvVatAmount'] = 0;
-            // $partData['InvNetAmount'] = 0;
             $partData['InvCustomerPayment'] = 0;
-            // $partData['InvCostAmount'] = 0;
             $partData['InvRefundAmount'] = 0;
             $partData['InvUser'] = 0;
             $partData['InvHold'] = 1;
@@ -2157,11 +2207,6 @@ $arr[] =null;
             $partData['IsComplete'] = 0;
             $partData['Flag'] = 0;
 
-            // $data['JobTotalDiscount'] =$_POST['total_discount'];
-            // $data['JobNetAmount'] =$_POST['totalNet'];
-            // $data['JobVatAmount'] =$_POST['totalVat'];
-            // $data['JobNbtAmount'] =$_POST['totalNbt'];
-            //$data['JobTotalAmount'] = $_POST['estimateAmount'];
             $data['JobIsVatTotal'] = $_POST['isTotalVat'];
             $data['JobIsNbtTotal'] = $_POST['isTotalNbt'];
             $data['JobNbtRatioTotal'] = $_POST['nbtRatioRate'];
@@ -2478,23 +2523,30 @@ $arr[] =null;
         $this->db->update('codegenerate',array('AutoNumber'=>($input+1)),array('FormName'=>($form)));
     }
 
+    // public function loadadvancepaymentjson() {
+    //     $query = $_GET['q'];
+    //     $customer = $_GET['cusCode'];
+    //     $location = $_GET['loc'];
+    //     $q = $this->db->select('customerpaymenthed.CusPayNo AS id, CONCAT(customerpaymenthed.CusPayNo," ",TotalPayment," ",Remark) AS text')
+    //         ->from('customerpaymenthed')
+    //         ->join('customerpaymentdtl','customerpaymentdtl.CusPayNo=customerpaymenthed.CusPayNo')
+    //         ->where('customerpaymenthed.Location',$location)
+    //         ->where('customerpaymenthed.CusCode',$customer)
+    //         ->where('customerpaymenthed.PaymentType',2)
+    //         ->where('customerpaymenthed.IsCancel',0)
+    //         ->where('customerpaymentdtl.IsRelease',0)
+    //         ->like('customerpaymenthed.CusPayNo', $query)
+    //         ->order_by('customerpaymenthed.CusPayNo','DESC')
+    //         ->get()->result();
+    //     echo json_encode($q);die;
+    // }
+
     public function loadadvancepaymentjson() {
         $query = $_GET['q'];
-        $customer = $_GET['cusCode'];
-        $location = $_GET['loc'];
-        $q = $this->db->select('customerpaymenthed.CusPayNo AS id, CONCAT(customerpaymenthed.CusPayNo," ",TotalPayment," ",Remark) AS text')
-            ->from('customerpaymenthed')
-            ->join('customerpaymentdtl','customerpaymentdtl.CusPayNo=customerpaymenthed.CusPayNo')
-            ->where('customerpaymenthed.Location',$location)
-            ->where('customerpaymenthed.CusCode',$customer)
-            ->where('customerpaymenthed.PaymentType',2)
-            ->where('customerpaymenthed.IsCancel',0)
-            ->where('customerpaymentdtl.IsRelease',0)
-            ->like('customerpaymenthed.CusPayNo', $query)
-            ->order_by('customerpaymenthed.CusPayNo','DESC')
-            ->get()->result();
-        echo json_encode($q);die;
-    }
+        $jobNo = $_GET['jobNo'];
+        $q = $this->db->select('Advance')->from('jobcardhed')->where('JobCardNo',$jobNo)->get()->row();
+         echo json_encode($q);die;
+     }
 
     public function getadvancepaymentbyid() {
         $id = $_POST['payid'];
@@ -2524,10 +2576,10 @@ $arr[] =null;
     }
 
     public function cancelInvoice() {
+
         
         $checkRole = $_SESSION['role'];
 
-// if Role is ADMIN (Role id ==1)
         if ($checkRole == 1) {
 
             $jobInvNo = $this->input->post('jobinvno');
@@ -2550,41 +2602,132 @@ $arr[] =null;
             if ($isPay > 0) {
                 echo 2;
             } else {
-                //check invoice already cancel or not
-                $query0 = $this->db->get_where('jobinvoicehed', array('JobInvNo' => $invCanel['JobInvoiceNo'], 'IsCancel' => 0));
+
+                $query0 = $this->db->select('JobCardNo')
+                    ->from('jobinvoicehed')
+                    ->where('JobInvNo', $jobInvNo)
+                    ->where('IsCancel', 0)
+                    ->get();
 
                 if ($query0->num_rows() > 0) {
-                    $query = $this->db->get_where('jobinvoicedtl', array('JobInvNo' => $invCanel['JobInvoiceNo']));
+                    $jobNo = $query0->row()->JobCardNo;
 
-                    if ($query->num_rows() > 0) {
-                        foreach ($query->result_array() as $row) {
-                            //update serial stock
-                            $jobtype = $row['JobType'];
-                            if ($jobtype == 2) {
-                                //    $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode' => $row['JobCode'], 'SerialNo' => $row['InvSerialNo'], 'Location' => $row['InvLocation']))->get();
-                                // if ($ps->num_rows() > 0) {
-                                //     $isPro = $this->db->select('InvProductCode')->from('invoicedtl')->where(array('InvProductCode' => $row['InvProductCode'], 'InvSerialNo' => $row['InvSerialNo'], 'InvLocation' => $row['InvLocation']))->get();
-                                //     if ($isPro->num_rows() == 0) {
-                                //         $this->db->update('productserialstock', array('Quantity' => 1), array('ProductCode' => $row['InvProductCode'], 'SerialNo' => $row['InvSerialNo']));
-                                //     }
-                                // } else {
+                    $this->db->where('JobCardNo', $jobNo);
+                    $this->db->update('jobcardhed', ['IsCancel' => 1]);
 
-                                // }
-                                $proCode = $row['JobCode'];
-                                $totalGrnQty = $row['JobQty'];
-                                $loc = $_SESSION['location'];
-                                $pl = 1;
-                                $costp = $row['JobCost'];
-                                $selp = $row['JobPrice'];
+                    $this->db->where('SalesPONumber', $jobNo);
+                    $this->db->update('issuenote_hed', ['InvIsCancel' => 1]);
 
-                                //update price stock
-                                $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
+                    $this->db->where('SalesPONumber', $jobNo);
+                    $issueNoteQuery = $this->db->get('issuenote_hed');
 
-                                //update product stock
-                                $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
-                            }
+                    if ($issueNoteQuery->num_rows() > 0) {
+                        $issueNoteNo = $issueNoteQuery->row()->SalesInvNo;
+
+                        $query = $this->db->get_where('issuenote_dtl', [
+                            'SalesInvNo' => $issueNoteNo
+                        ]);
+
+                        if ($query->num_rows() > 0) {
+                             foreach ($query->result_array() as $row) {
+                                $isEmi = $row['IsEmi'];
+                                $isSerial = $row['IsSerial'];
+                                $emi_noArr = $row['EmiNo'];
+                                $serial_noArr = $row['SalesSerialNo'];
+                                $product_codeArr = $row['SalesProductCode'];
+                                $location = $row['SalesInvLocation'];
+                                $totalQty = $row['SalesQty'] + $row['SalesFreeQty'];
+
+                                if ($isSerial == 1 && $isEmi == 0) {
+                                    $this->db->update('productserialstock', ['Quantity' => 1], ['ProductCode' => $product_codeArr,'Location' => $location,'SerialNo' => $serial_noArr]);
+                                }
+
+                                if ($isSerial == 0 && $isEmi == 1) {
+                                    $this->db->update('productimeistock', ['Quantity' => 1], ['ProductCode' => $product_codeArr,'Location' => $location,'EmiNo' => $emi_noArr]);
+                                }
+
+                                if ($isSerial == 1 && $isEmi == 1) {
+                                    $this->db->update('productserialemistock', ['Quantity' => 1], ['ProductCode' => $product_codeArr,'Location' => $location,'SerialNo' => $serial_noArr]);
+                                }
+
+                                $proCode = $row['SalesProductCode'];
+                                $pl = $row['SalesPriceLevel'];
+                                $costp = $row['SalesCostPrice'];
+                                $selp = $row['SalesUnitPrice'];
+                                $loc = $row['SalesInvLocation'];
+
+                                if($pl ==1){
+                                    $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalQty','1','$costp','$selp','$loc')");
+                                    $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalQty',0,'$loc')");
+                                }else{
+                                    $this->Stock_model->updateStock($proCode, $loc, $row['SalesQty'], $selp);
+                                }
+
+                                
+                                // $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalQty',0,'$loc')");
+                                // echo json_encode($row);die;
+                             }
                         }
+                        
                     }
+                    // $jobNoQuery = $query->row();
+                   
+                
+                //check invoice already cancel or not
+                //$query0 = $this->db->get_where('jobinvoicehed', array('JobInvNo' => $invCanel['JobInvoiceNo'], 'IsCancel' => 0));
+
+                // if ($query0->num_rows() > 0) {
+                //     $query = $this->db->get_where('jobinvoicedtl', array('JobInvNo' => $invCanel['JobInvoiceNo']));
+
+                //     if ($query->num_rows() > 0) {
+                //         foreach ($query->result_array() as $row) {
+                            
+                //             //update serial stock
+                //             $jobtype = $row['JobType'];
+
+                //             $isEmi = $row['IsEmi'];
+                //             $isSerial = $row['IsSerial'];
+                //             $emi_noArr = $row['EmiNo'];
+                //             $serial_noArr = $row['SalesSerialNo'];
+                //             $product_codeArr =  $row['JobCode'];
+                //             $location =  $row['JobLocation'];
+                //             if($isSerial== 1 && $isEmi == 0){
+                                 
+                //                 $this->db->update('productserialstock',array('Quantity'=>1),array('ProductCode'=> $product_codeArr,'Location'=> $location,'SerialNo'=> $serial_noArr));
+                //             }
+
+                //             if($isSerial== 0 && $isEmi == 1){
+                //                 $this->db->update('	productimeistock',array('Quantity'=>1),array('ProductCode'=> $product_codeArr,'Location'=> $location,'EmiNo'=> $emi_noArr));
+                //             }
+                //             if($isSerial== 1 && $isEmi == 1){
+                             
+                //                 $this->db->update('productserialemistock',array('Quantity'=>1),array('ProductCode'=> $product_codeArr,'Location'=> $location,'SerialNo'=> $serial_noArr));
+                //             }
+                //             if ($jobtype == 2) {
+                //                 //    $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode' => $row['JobCode'], 'SerialNo' => $row['InvSerialNo'], 'Location' => $row['InvLocation']))->get();
+                //                 // if ($ps->num_rows() > 0) {
+                //                 //     $isPro = $this->db->select('InvProductCode')->from('invoicedtl')->where(array('InvProductCode' => $row['InvProductCode'], 'InvSerialNo' => $row['InvSerialNo'], 'InvLocation' => $row['InvLocation']))->get();
+                //                 //     if ($isPro->num_rows() == 0) {
+                //                 //         $this->db->update('productserialstock', array('Quantity' => 1), array('ProductCode' => $row['InvProductCode'], 'SerialNo' => $row['InvSerialNo']));
+                //                 //     }
+                //                 // } else {
+
+                //                 // }
+                //                 $proCode = $row['JobCode'];
+                //                 $totalGrnQty = $row['JobQty'];
+                //                 $loc = $_SESSION['location'];
+                //                 $pl = 1;
+                //                 $costp = $row['JobCost'];
+                //                 $selp = $row['JobPrice'];
+
+                //                 //update price stock
+                //                 $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
+
+                //                 //update product stock
+                //                 $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
+                //             }
+                //         }
+                //     }
 
                     //update/ cancel credit invoice
                     $query2 = $this->db->get_where('creditinvoicedetails', array('InvoiceNo' => $invCanel['JobInvoiceNo']));
@@ -2617,99 +2760,99 @@ $arr[] =null;
             die;
         }
  //  if login using other roles
-        else {
-            $jobInvNo = $this->input->post('jobinvno');
-            $checkInvoiceAvailable = $this->db->get_where('jobinvoicehed', array('JobInvNo' => $jobInvNo, 'JobLocation' => $_SESSION['location']));
+        // else {
+        //     $jobInvNo = $this->input->post('jobinvno');
+        //     $checkInvoiceAvailable = $this->db->get_where('jobinvoicehed', array('JobInvNo' => $jobInvNo, 'JobLocation' => $_SESSION['location']));
 
-            if ($checkInvoiceAvailable->num_rows() > 0) {
-                $this->db->trans_start();
-                $cancelNo = $this->get_max_code('CancelJobInvoice');
-                $invCanel = array(
-                    'AppNo' => '1',
-                    'CancelNo' => $cancelNo,
-                    'Location' => $_SESSION['location'],
-                    'CancelDate' => date("Y-m-d H:i:s"),
-                    'JobInvoiceNo' => $jobInvNo,
-                    'Remark' => $_POST['remark'],
-                    'CancelUser' => $_SESSION['user_id']);
-                $this->db->insert('canceljobinvoice', $invCanel);
+        //     if ($checkInvoiceAvailable->num_rows() > 0) {
+        //         $this->db->trans_start();
+        //         $cancelNo = $this->get_max_code('CancelJobInvoice');
+        //         $invCanel = array(
+        //             'AppNo' => '1',
+        //             'CancelNo' => $cancelNo,
+        //             'Location' => $_SESSION['location'],
+        //             'CancelDate' => date("Y-m-d H:i:s"),
+        //             'JobInvoiceNo' => $jobInvNo,
+        //             'Remark' => $_POST['remark'],
+        //             'CancelUser' => $_SESSION['user_id']);
+        //         $this->db->insert('canceljobinvoice', $invCanel);
 
-                //check is made any previous payment
-                $isPay = $this->db->select('count(invoicesettlementdetails.InvNo) AS inv')->from('invoicesettlementdetails')->join('customerpaymenthed', 'invoicesettlementdetails.CusPayNo = customerpaymenthed.CusPayNo', 'INNER')->where('invoicesettlementdetails.InvNo', $jobInvNo)->where('customerpaymenthed.IsCancel', 0)->get()->row()->inv;
+        //         //check is made any previous payment
+        //         $isPay = $this->db->select('count(invoicesettlementdetails.InvNo) AS inv')->from('invoicesettlementdetails')->join('customerpaymenthed', 'invoicesettlementdetails.CusPayNo = customerpaymenthed.CusPayNo', 'INNER')->where('invoicesettlementdetails.InvNo', $jobInvNo)->where('customerpaymenthed.IsCancel', 0)->get()->row()->inv;
 
-                if ($isPay > 0) {
-                    echo 2;
-                } else {
-                    //check invoice already cancel or not
-                    $query0 = $this->db->get_where('jobinvoicehed', array('JobInvNo' => $invCanel['JobInvoiceNo'], 'IsCancel' => 0));
+        //         if ($isPay > 0) {
+        //             echo 2;
+        //         } else {
+        //             //check invoice already cancel or not
+        //             $query0 = $this->db->get_where('jobinvoicehed', array('JobInvNo' => $invCanel['JobInvoiceNo'], 'IsCancel' => 0));
 
-                    if ($query0->num_rows() > 0) {
-                        $query = $this->db->get_where('jobinvoicedtl', array('JobInvNo' => $invCanel['JobInvoiceNo']));
+        //             if ($query0->num_rows() > 0) {
+        //                 $query = $this->db->get_where('jobinvoicedtl', array('JobInvNo' => $invCanel['JobInvoiceNo']));
 
-                        if ($query->num_rows() > 0) {
-                            foreach ($query->result_array() as $row) {
-                                //update serial stock
-                                $jobtype = $row['JobType'];
-                                if ($jobtype == 2) {
-                                    //    $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode' => $row['JobCode'], 'SerialNo' => $row['InvSerialNo'], 'Location' => $row['InvLocation']))->get();
-                                    // if ($ps->num_rows() > 0) {
-                                    //     $isPro = $this->db->select('InvProductCode')->from('invoicedtl')->where(array('InvProductCode' => $row['InvProductCode'], 'InvSerialNo' => $row['InvSerialNo'], 'InvLocation' => $row['InvLocation']))->get();
-                                    //     if ($isPro->num_rows() == 0) {
-                                    //         $this->db->update('productserialstock', array('Quantity' => 1), array('ProductCode' => $row['InvProductCode'], 'SerialNo' => $row['InvSerialNo']));
-                                    //     }
-                                    // } else {
+        //                 if ($query->num_rows() > 0) {
+        //                     foreach ($query->result_array() as $row) {
+        //                         //update serial stock
+        //                         $jobtype = $row['JobType'];
+        //                         if ($jobtype == 2) {
+        //                             //    $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode' => $row['JobCode'], 'SerialNo' => $row['InvSerialNo'], 'Location' => $row['InvLocation']))->get();
+        //                             // if ($ps->num_rows() > 0) {
+        //                             //     $isPro = $this->db->select('InvProductCode')->from('invoicedtl')->where(array('InvProductCode' => $row['InvProductCode'], 'InvSerialNo' => $row['InvSerialNo'], 'InvLocation' => $row['InvLocation']))->get();
+        //                             //     if ($isPro->num_rows() == 0) {
+        //                             //         $this->db->update('productserialstock', array('Quantity' => 1), array('ProductCode' => $row['InvProductCode'], 'SerialNo' => $row['InvSerialNo']));
+        //                             //     }
+        //                             // } else {
 
-                                    // }
-                                    $proCode = $row['JobCode'];
-                                    $totalGrnQty = $row['JobQty'];
-                                    $loc = $_SESSION['location'];
-                                    $pl = 1;
-                                    $costp = $row['JobCost'];
-                                    $selp = $row['JobPrice'];
+        //                             // }
+        //                             $proCode = $row['JobCode'];
+        //                             $totalGrnQty = $row['JobQty'];
+        //                             $loc = $_SESSION['location'];
+        //                             $pl = 1;
+        //                             $costp = $row['JobCost'];
+        //                             $selp = $row['JobPrice'];
 
-                                    //update price stock
-                                    $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
+        //                             //update price stock
+        //                             $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
 
-                                    //update product stock
-                                    $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
-                                }
-                            }
-                        }
+        //                             //update product stock
+        //                             $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
+        //                         }
+        //                     }
+        //                 }
 
-                        //update/ cancel credit invoice
-                        $query2 = $this->db->get_where('creditinvoicedetails', array('InvoiceNo' => $invCanel['JobInvoiceNo'], 'Location' => $loc));
-                        if ($query2->num_rows() > 0) {
-                            $this->db->update('creditinvoicedetails', array('IsCancel' => 1), array('InvoiceNo' => $invCanel['JobInvoiceNo'], 'Location' => $invCanel['Location']));
-                            foreach ($query2->result_array() as $row) {
-                                //update customer outstanding
-                                $creditAmount = $row['CreditAmount'];
-                                $cuscode = $row['CusCode'];
-                                $this->db->query("CALL SPT_UPDATE_CUSOUTSTAND_RBACK('$cuscode','0','$creditAmount','0');");
-                            }
-                        }
-                        //cancel cheques
-                        $query3 = $this->db->get_where('chequedetails', array('ReferenceNo' => $invCanel['JobInvoiceNo'], 'IsCancel' => 0, 'IsRelease' => 0,));
-                        if ($query3->num_rows() > 0) {
-                            $this->db->update('chequedetails', array('IsCancel' => 1), array('ReferenceNo' => $invCanel['JobInvoiceNo']));
-                        }
+        //                 //update/ cancel credit invoice
+        //                 $query2 = $this->db->get_where('creditinvoicedetails', array('InvoiceNo' => $invCanel['JobInvoiceNo'], 'Location' => $loc));
+        //                 if ($query2->num_rows() > 0) {
+        //                     $this->db->update('creditinvoicedetails', array('IsCancel' => 1), array('InvoiceNo' => $invCanel['JobInvoiceNo'], 'Location' => $invCanel['Location']));
+        //                     foreach ($query2->result_array() as $row) {
+        //                         //update customer outstanding
+        //                         $creditAmount = $row['CreditAmount'];
+        //                         $cuscode = $row['CusCode'];
+        //                         $this->db->query("CALL SPT_UPDATE_CUSOUTSTAND_RBACK('$cuscode','0','$creditAmount','0');");
+        //                     }
+        //                 }
+        //                 //cancel cheques
+        //                 $query3 = $this->db->get_where('chequedetails', array('ReferenceNo' => $invCanel['JobInvoiceNo'], 'IsCancel' => 0, 'IsRelease' => 0,));
+        //                 if ($query3->num_rows() > 0) {
+        //                     $this->db->update('chequedetails', array('IsCancel' => 1), array('ReferenceNo' => $invCanel['JobInvoiceNo']));
+        //                 }
 
-                        $this->db->update('jobinvoicehed', array('IsCancel' => 1), array('JobInvNo' => $invCanel['JobInvoiceNo'], 'JobLocation' => $invCanel['Location']));
-                        $this->Job_model->bincard($invCanel['JobInvoiceNo'], 2, 'cancelled');//update bincard
+        //                 $this->db->update('jobinvoicehed', array('IsCancel' => 1), array('JobInvNo' => $invCanel['JobInvoiceNo'], 'JobLocation' => $invCanel['Location']));
+        //                 $this->Job_model->bincard($invCanel['JobInvoiceNo'], 2, 'cancelled');//update bincard
 
-                        $this->update_max_code('CancelJobInvoice');
-                        $this->db->trans_complete();
-                        echo $this->db->trans_status();
-                    } else {
-                        echo 3;
-                    }
+        //                 $this->update_max_code('CancelJobInvoice');
+        //                 $this->db->trans_complete();
+        //                 echo $this->db->trans_status();
+        //             } else {
+        //                 echo 3;
+        //             }
 
-                }
-                die;
-            } else {
-                echo 4;
-                die;
-            }
-        }
+        //         }
+        //         die;
+        //     } else {
+        //         echo 4;
+        //         die;
+        //     }
+        // }
     }
 
       public function addSalesInvoice($customerOder=null) {
@@ -2717,6 +2860,11 @@ $arr[] =null;
         $type = isset($_GET['type'])?$_GET['type']:NULL;
         $sup = isset($_GET['sup'])?$_GET['sup']:0;
         $cus = isset($_GET['cus'])?$_GET['cus']:NULL;
+        if($cus == null){
+              $cus = 10001;
+          }else{
+              $cus = $cus;
+          }
         $regno = isset($_GET['regno'])?$_GET['regno']:NULL;
         $action = isset($_GET['action'])?$_GET['action']:1;
         $this->load->helper('url'); 
@@ -2735,7 +2883,7 @@ $arr[] =null;
         $this->data['plv'] = $this->Job_model->loadpricelevel();
         $this->data['location'] = $this->db->select()->from('location')->get()->result();
         $this->data['warrantytype'] = $this->db->select()->from('warranty_typs')->get()->result();
-        $this->data['salesperson'] = $this->db->select()->from('salespersons')->get()->result();
+        $this->data['salesperson'] = $this->db->select()->from('salespersons')->where('RepType',6)->get()->result();
         $this->data['bank_acc']=$this->db->select('bank_account.*,bank.BankName')->from('bank_account')->join('bank','BankCode=acc_bank')->get()->result();
         $this->data['bank'] = $this->db->select()->from('bank')->get()->result();
         $this->data['sup'] = $this->db->select('SupCode AS id,SupName AS text')->from('supplier')->get()->result();
@@ -2755,7 +2903,7 @@ $arr[] =null;
     }
 
     public function saveNewSalesInvoice() {
-        $location=1;
+        $location=$_SESSION['location'];
         $this->load->model('admin/Salesinvoice_model');
 
         $creditAmount = $_POST['creditAmount'];
@@ -2772,10 +2920,14 @@ $arr[] =null;
             $grnNo = $this->Salesinvoice_model->get_max_code('TaxInvoiceNo'.$location);
         }elseif($_POST['action']==1 && $SalesInvType==3){
             $grnNo = $this->Salesinvoice_model->get_max_code('CreditInvoiceNo'.$location);
+           
         }elseif ($_POST['action']==2) {
            $grnNo = $_POST['grn_no'];
         }
-
+      
+ 
+        $org_unit_price = $_POST['org_unit_price'];
+ 
         $vehicleno = isset($_POST['regNo'])?$_POST['regNo']:'';
         $salesorder = $_POST['salesorder'];
         $invDate = date("Y-m-d H:i:s");
@@ -2817,6 +2969,7 @@ $arr[] =null;
         $receiver_nic = $_POST['receiver_nic'];
         $remark = $_POST['remark'];
         $refferNo = $_POST['refferNo'];
+        $mchange = $_POST['mchange'];
         $customerPayment =  $cashAmount+ $chequeAmount+ $cardAmount+$advanceAmount+$bankAmount+$returnAmount;
         $cashAmount=$total_net_amount-$creditAmount-$cardAmount-$chequeAmount-$advanceAmount-$bankAmount-$returnAmount;
          if ($cashAmount < 0){
@@ -2831,15 +2984,52 @@ $arr[] =null;
         }
         //add to here
         $grnHed = array(
-            'AppNo' => '1','SalesInvNo' => $grnNo,'SalesOrderNo'=>'','SalesVehicle'=>$vehicleno,'SalesInsCompany'=>$SalesInsCompany,'SalesLocation' => $location,'SalesOrgDate' => $grnDattime,
-            'SalesDate' => $invDate,'SalesCustomer' => $customer,'SalesInvType' => $SalesInvType,'SalesInvAmount' => $total_amount,'SalesNetAmount' => $total_net_amount,
-            'SalesCashAmount'=>$cashAmount,'SalesShippingLabel'=>$shipping_label,'SalesShipping'=>$shipping,'SalesBankAcc'=>$bank_account,'SalesBankAmount'=>$bankAmount,
-            'SalesCCardAmount'=>$cardAmount,'SalesCreditAmount'=>$creditAmount,'SalesChequeAmount'=>$chequeAmount,'SalesCustomerPayment'=>$customerPayment,
-            'SalesAdvancePayment'=>$advanceAmount,'AdvancePayNo'=>$advancePayNo,'SalesReturnPayment'=>$returnAmount,'SalesDisAmount' => $total_discount,
-            'SalesDisPercentage' => $totalDisPerent,'SalesInvUser' => $invUser,'IsComplete' => $isComplete,'InvIsCancel'=>0,'SalesIsNbt'=>$isTotalNbt,'SalesIsVat'=>$isTotalVat,
-            'SalesNbtRatio'=>$nbtRatioRate,'SalesNbtAmount'=>$totalNbt,'SalesVatAmount'=>$totalVat,'SalesPONumber'=>$po_number,'SalesPerson'=>$newsalesperson,
-            'SalesReceiver'=>$receiver_name,'SalesRecNic'=>$receiver_nic,'SalesCommsion'=>$com_amount,'SalesComCus'=>$compayto,'salesInvRemark'=>$remark,'refferNo'=>$refferNo
+            'AppNo' => '1',
+            'SalesInvNo' => $grnNo,
+            'SalesOrderNo'=>$salesorder,
+            'SalesVehicle'=>$vehicleno,
+            'SalesInsCompany'=>$SalesInsCompany,
+            'SalesLocation' => $location,
+            'SalesOrgDate' => $grnDattime,
+            'SalesDate' => $invDate,
+            'SalesCustomer' => $customer,
+            'SalesInvType' => $SalesInvType,
+            'SalesInvAmount' => $total_amount,
+            'SalesNetAmount' => $total_net_amount,
+            'SalesCashAmount'=>$cashAmount,
+            'SalesShippingLabel'=>$shipping_label,
+            'SalesShipping'=>$shipping,
+            'SalesBankAcc'=>$bank_account,
+            'SalesBankAmount'=>$bankAmount,
+            'SalesCCardAmount'=>$cardAmount,
+            'SalesCreditAmount'=>$creditAmount,
+            'SalesChequeAmount'=>$chequeAmount,
+            'SalesCustomerPayment'=>$customerPayment,
+            'SalesAdvancePayment'=>$advanceAmount,
+            'AdvancePayNo'=>$advancePayNo,
+            'SalesReturnPayment'=>$returnAmount,
+            'SalesDisAmount' => $total_discount,
+            'SalesDisPercentage' => $totalDisPerent,
+            'SalesInvUser' => $invUser,
+            'IsComplete' => $isComplete,
+            'InvIsCancel'=>0,
+            'SalesIsNbt'=>$isTotalNbt,
+            'SalesIsVat'=>$isTotalVat,
+            'SalesNbtRatio'=>$nbtRatioRate,
+            'SalesNbtAmount'=>$totalNbt,
+            'SalesVatAmount'=>$totalVat,
+            'SalesPONumber'=>$po_number,
+            'SalesPerson'=>$newsalesperson,
+            'SalesReceiver'=>$receiver_name,
+            'SalesRecNic'=>$receiver_nic,
+            'SalesCommsion'=>$com_amount,
+            'SalesComCus'=>$compayto,
+            'salesInvRemark'=>$remark,
+            'refferNo'=>$refferNo,
+            'Blance'=>$mchange
         );
+
+
 
         $id3 = array('CompanyID' => $location);
         $this->data['company'] = $this->Salesinvoice_model->get_data_by_where('company',$id3);
@@ -2847,6 +3037,7 @@ $arr[] =null;
 
         if($_POST['action']==1){
             $res2= $this->Salesinvoice_model->saveSalesInvoice($grnHed,$_POST,$grnNo,$totalDisPerent);
+            
         }elseif ($_POST['action']==2) {
             $grnHed = array(
             'AppNo' => '1','SalesInvNo' => $grnNo,'SalesOrderNo'=>'','SalesVehicle'=>$vehicleno,'SalesInsCompany'=>$SalesInsCompany,'SalesLocation' => $location,
@@ -2857,7 +3048,7 @@ $arr[] =null;
                 'SalesReturnPayment'=>$returnAmount,'SalesDisAmount' => $total_discount,'SalesDisPercentage' => $totalDisPerent,'SalesInvUser' => $invUser,
                 'IsComplete' => $isComplete,'InvIsCancel'=>0,'SalesIsNbt'=>$isTotalNbt,'SalesIsVat'=>$isTotalVat,'SalesNbtRatio'=>$nbtRatioRate,'SalesNbtAmount'=>$totalNbt,
                 'SalesVatAmount'=>$totalVat,'SalesPONumber'=>$po_number,'SalesPerson'=>$newsalesperson,'SalesReceiver'=>$receiver_name,'SalesRecNic'=>$receiver_nic,
-                'SalesCommsion'=>$com_amount,'SalesComCus'=>$compayto,'salesInvRemark'=>$remark,'refferNo'=>$refferNo
+                'SalesCommsion'=>$com_amount,'SalesComCus'=>$compayto,'salesInvRemark'=>$remark,'refferNo'=>$refferNo,'Blance'=>$mchange
         );
            $res2= $this->Salesinvoice_model->updateSalesInvoice($grnHed,$_POST,$grnNo,$totalDisPerent);
         }
@@ -2953,14 +3144,41 @@ $arr[] =null;
         die;
     }
 
-    public function getSalesInvoiceProductById(){
+   public function getSalesInvoiceProductById(){
         $this->load->model('admin/Salesinvoice_model');
         $soNo = $_POST['proCode'];
-         $invNo = $_POST['invNo'];
-          $name = $_POST['name'];
+        $invNo = $_POST['invNo'];
+        $name = $_POST['name'];
+        $serial = $_POST['serial'];
 
-        $arr['product'] = $this->db->select('salesinvoicedtl.*,product.*,productcondition.*')->from('salesinvoicedtl')
-        ->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode')->join('productcondition', 'product.ProductCode = productcondition.ProductCode')->where('salesinvoicedtl.SalesProductCode', $soNo)->where('salesinvoicedtl.SalesProductName', $name)->where('salesinvoicedtl.SalesInvNo', $invNo)->get()->row();
+    
+
+
+        if ($serial != null) {
+
+
+            $arr['product'] = $this->db->select('salesinvoicedtl.*,product.*,productcondition.*')
+                ->from('salesinvoicedtl')
+                ->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode')
+                ->join('productcondition', 'product.ProductCode = productcondition.ProductCode')
+                // ->where('salesinvoicedtl.SalesSerialNo', $serial)
+                ->where('salesinvoicedtl.SalesProductCode', $soNo)
+                ->where('salesinvoicedtl.SalesProductName', $name)
+                ->where('salesinvoicedtl.SalesInvNo', $invNo)
+                ->get()->row();
+
+                  
+        } else {
+            $arr['product'] = $this->db->select('salesinvoicedtl.*,product.*,productcondition.*')
+                ->from('salesinvoicedtl')
+                ->join('product', 'product.ProductCode = salesinvoicedtl.SalesProductCode')
+                ->join('productcondition', 'product.ProductCode = productcondition.ProductCode')
+                ->where('salesinvoicedtl.SalesProductCode', $soNo)
+                ->where('salesinvoicedtl.SalesProductName', $name)
+                ->where('salesinvoicedtl.SalesInvNo', $invNo)
+                ->get()->row();
+        }
+
 
         echo json_encode($arr);
         die;
@@ -2982,13 +3200,10 @@ $arr[] =null;
         
             $checkRole = $_SESSION['role'];
 
-// if Role is ADMIN (Role id ==1)
-        if ($checkRole == 1) {
-
             $salesInvNo = $this->input->post('salesinvno');
-
+            
             $this->db->trans_start();
-
+            
             $cancelNo = $this->get_max_code('CancelSalesInvoice');
             $invCanel = array(
                 'AppNo' => '1',
@@ -2998,44 +3213,66 @@ $arr[] =null;
                 'SalesInvoiceNo' => $salesInvNo,
                 'Remark' => $_POST['remark'],
                 'CancelUser' => $_SESSION['user_id']);
-            $this->db->insert('cancelsalesinvoice', $invCanel);
+                $this->db->insert('cancelsalesinvoice', $invCanel);
+                
+                //check is made any previous payment
+                $isPay = $this->db->select('count(invoicesettlementdetails.InvNo) AS inv')->from('invoicesettlementdetails')->join('customerpaymenthed', 'invoicesettlementdetails.CusPayNo = customerpaymenthed.CusPayNo', 'INNER')->where('invoicesettlementdetails.InvNo', $salesInvNo)->where('customerpaymenthed.IsCancel', 0)->get()->row()->inv;
+                
+                if ($isPay > 0) {
+                    echo 2;
+                } else {
+                    //check invoice already cancel or not
+                    $query0 = $this->db->select('*')->from('salesinvoicehed')->where('SalesInvNo',$salesInvNo)->where('InvIsCancel',0)->get();
 
-            //check is made any previous payment
-            $isPay = $this->db->select('count(invoicesettlementdetails.InvNo) AS inv')->from('invoicesettlementdetails')->join('customerpaymenthed', 'invoicesettlementdetails.CusPayNo = customerpaymenthed.CusPayNo', 'INNER')->where('invoicesettlementdetails.InvNo', $salesInvNo)->where('customerpaymenthed.IsCancel', 0)->get()->row()->inv;
-
-            if ($isPay > 0) {
-                echo 2;
-            } else {
-                //check invoice already cancel or not
-                $query0 = $this->db->get_where('salesinvoicehed', array('SalesInvNo' => $invCanel['SalesInvoiceNo'], 'InvIsCancel' => 0));
+                    
                 if ($query0->num_rows() > 0) {
-                    $query = $this->db->get_where('salesinvoicedtl', array('SalesInvNo' => $invCanel['SalesInvoiceNo']));
+                    //$query =$this->db->select('*')->from('salesinvoicedtl')->where('SalesInvNo',$salesInvNo)->get();
+                    $query = $this->db->get_where('salesinvoicedtl', array('SalesInvNo' => $salesInvNo));
+                    
                     if ($query->num_rows() > 0) {
                         foreach ($query->result_array() as $row) {
-                            //update serial stock
-                            $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode' => $row['SalesProductCode'], 'SerialNo' => $row['SalesSerialNo'], 'Location' => $row['SalesInvLocation']))->get();
-                            if ($ps->num_rows() > 0) {
-                                $isPro = $this->db->select('SalesProductCode')->from('salesinvoicedtl')->where(array('SalesProductCode' => $row['SalesProductCode'], 'SalesSerialNo' => $row['SalesSerialNo'], 'SalesInvLocation' => $row['SalesInvLocation'], 'SalesInvNo' => $invCanel['SalesInvoiceNo']))->get();
-                                // echo $isPro->num_rows();die;
-                                if ($isPro->num_rows() > 0) {
-                                     $this->db->update('productserialstock', array('Quantity' => 1), array('ProductCode' => $row['SalesProductCode'], 'SerialNo' => $row['SalesSerialNo']));
-                                }
-                            } else {
-
+                           
+                            $isEmi = $row['IsEmi'];
+                            $isSerial = $row['IsSerial'];
+                            $emi_noArr = $row['EmiNo'];
+                            $serial_noArr = $row['SalesSerialNo'];
+                            $product_codeArr =  $row['SalesProductCode'];
+                            $location =  $row['SalesInvLocation'];
+                          
+                            if($isSerial== 1 && $isEmi == 0){
+                                 
+                                $this->db->update('productserialstock',array('Quantity'=>1),array('ProductCode'=> $product_codeArr,'Location'=> $location,'SerialNo'=> $serial_noArr));
                             }
 
+                            if($isSerial== 0 && $isEmi == 1){
+                                $this->db->update('	productimeistock',array('Quantity'=>1),array('ProductCode'=> $product_codeArr,'Location'=> $location,'EmiNo'=> $emi_noArr));
+                            }
+                            if($isSerial== 1 && $isEmi == 1){
+                              
+                                $this->db->update('productserialemistock',array('Quantity'=>1),array('ProductCode'=> $product_codeArr,'Location'=> $location,'SerialNo'=> $serial_noArr));
+                            }
+                          
+
                             $proCode = $row['SalesProductCode'];
-                            $totalGrnQty = $row['SalesQty'];
+                            $totalGrnQty = $row['SalesQty'] +$row['SalesFreeQty'];
                             $loc = $row['SalesInvLocation'];
                             $pl = $row['SalesPriceLevel'];
+                           
                             $costp = $row['SalesCostPrice'];
                             $selp = $row['SalesUnitPrice'];
 
-                            //update price stock
-                            $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
-
-                            //update product stock
-                            $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
+                            if($pl == 1){
+                                 $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','1','$costp','$selp','$loc')");
+                                $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')"); 
+                            }else{
+                                 //update price stock
+                                $this->Stock_model->updateStock($proCode, $location, $row['SalesQty'], $selp);
+                                // echo var_dump($pl);die;
+                                //update product stock
+                                //$this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
+                            }
+                             
+                           
                             // }
                         }
                     }
@@ -3076,109 +3313,110 @@ $arr[] =null;
                 }
             }
             die;
-        }
-//  if login using other roles
-        else {
-            $salesInvNo = $this->input->post('salesinvno');
-            $checkInvoiceAvailable = $this->db->get_where('salesinvoicehed', array('SalesInvNo' => $salesInvNo, 'SalesLocation' => $_SESSION['location']));
+        
 
-            if ($checkInvoiceAvailable->num_rows() > 0) {
-
-                $this->db->trans_start();
-
-                $cancelNo = $this->get_max_code('CancelSalesInvoice');
-                $invCanel = array(
-                    'AppNo' => '1',
-                    'CancelNo' => $cancelNo,
-                    'Location' => $_SESSION['location'],
-                    'CancelDate' => date("Y-m-d H:i:s"),
-                    'SalesInvoiceNo' => $salesInvNo,
-                    'Remark' => $_POST['remark'],
-                    'CancelUser' => $_SESSION['user_id']);
-                $this->db->insert('cancelsalesinvoice', $invCanel);
-
-                //check is made any previous paymen
-                $isPay = $this->db->select('count(invoicesettlementdetails.InvNo) AS inv')->from('invoicesettlementdetails')->join('customerpaymenthed', 'invoicesettlementdetails.CusPayNo = customerpaymenthed.CusPayNo', 'INNER')->where('invoicesettlementdetails.InvNo', $salesInvNo)->where('customerpaymenthed.IsCancel', 0)->get()->row()->inv;
-
-                if ($isPay > 0) {
-                    echo 2;
-                } else {
-                    //check invoice already cancel or not
-                    $query0 = $this->db->get_where('salesinvoicehed', array('SalesInvNo' => $invCanel['SalesInvoiceNo'], 'InvIsCancel' => 0));
-                    if ($query0->num_rows() > 0) {
-                        $query = $this->db->get_where('salesinvoicedtl', array('SalesInvNo' => $invCanel['SalesInvoiceNo']));
-                        if ($query->num_rows() > 0) {
-                            foreach ($query->result_array() as $row) {
-                                //update serial stock
-                                $ps = $this->db->select('ProductCode')->from('productserialstock')->where(array('ProductCode' => $row['SalesProductCode'], 'SerialNo' => $row['SalesSerialNo'], 'Location' => $row['SalesInvLocation']))->get();
-                                if ($ps->num_rows() > 0) {
-                                    $isPro = $this->db->select('SalesProductCode')->from('salesinvoicedtl')->where(array('SalesProductCode' => $row['SalesProductCode'], 'SalesSerialNo' => $row['SalesSerialNo'], 'SalesInvLocation' => $row['SalesInvLocation'], 'SalesInvNo' => $invCanel['SalesInvoiceNo']))->get();
-                                    // echo $isPro->num_rows();die;
-                                    if ($isPro->num_rows() > 0) {
-                                        // $this->db->update('productserialstock', array('Quantity' => 1), array('ProductCode' => $row['SalesProductCode'], 'SerialNo' => $row['SalesSerialNo']));
-                                    }
-                                } else {
-
-                                }
-
-                                $proCode = $row['SalesProductCode'];
-                                $totalGrnQty = $row['SalesQty'];
-                                $loc = $row['SalesInvLocation'];
-                                $pl = $row['SalesPriceLevel'];
-                                $costp = $row['SalesCostPrice'];
-                                $selp = $row['SalesUnitPrice'];
-
-                                //update price stock
-                                $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','$pl','$costp','$selp','$loc')");
-
-                                //update product stock
-                                $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
-                                // }
-                            }
-                        }
-
-                        //update/ cancel credit invoice
-                        $query2 = $this->db->get_where('creditinvoicedetails', array('InvoiceNo' => $invCanel['SalesInvoiceNo'], 'Location' => $invCanel['Location']));
-                        if ($query2->num_rows() > 0) {
-                            $this->db->update('creditinvoicedetails', array('IsCancel' => 1), array('InvoiceNo' => $invCanel['SalesInvoiceNo'], 'Location' => $invCanel['Location']));
-                            foreach ($query2->result_array() as $row) {
-                                //update customer outstanding
-                                $creditAmount = $row['CreditAmount'];
-                                $cuscode = $row['CusCode'];
-                                $this->db->query("CALL SPT_UPDATE_CUSOUTSTAND_RBACK('$cuscode','0','$creditAmount','0');");
-                            }
-                        }
-
-                        //cancel cheques
-                        $query3 = $this->db->get_where('chequedetails', array('ReferenceNo' => $invCanel['SalesInvoiceNo'], 'IsCancel' => 0, 'IsRelease' => 0,));
-                        if ($query3->num_rows() > 0) {
-                            $this->db->update('chequedetails', array('IsCancel' => 1), array('ReferenceNo' => $invCanel['SalesInvoiceNo']));
-                        }
-
-                        //cancel return payment
-                        $returnPayment =$query0->row()->SalesReturnPayment;
-                        if ($returnPayment > 0){
-
-                            $returnPayNo = $invCanel['SalesInvoiceNo'];
-                            $this->db->update('return_payment',array('IsComplete'=>0),array('InvoiceNo'=>$returnPayNo));
-
-                        }
-
-                        $this->db->update('salesinvoicehed', array('InvIsCancel' => 1), array('SalesInvNo' => $invCanel['SalesInvoiceNo'], 'SalesLocation' => $invCanel['Location']));
-                        $this->update_max_code('CancelSalesInvoice');
-                        $this->db->trans_complete();
-                        echo $this->db->trans_status();
-                    } else {
-                        echo 3;
-                    }
-                }
-                die;
-            } else {
-                echo 4;
-                die;
-            }
-        }
+        
     }
+
+
+    public function cancelIssueNote() {
+        $checkRole = $_SESSION['role'];
+        $issueNoteNo = $this->input->post('salesinvno');
+        $remark = $this->input->post('remark');
+
+        $this->db->trans_start();
+
+        // Check issue note header
+        $query0 = $this->db->get_where('issuenote_hed', [
+            'SalesInvNo' => $issueNoteNo,
+            'InvIsCancel' => 0
+        ]);
+
+        if ($query0->num_rows() > 0) {
+            // Get details
+            $query = $this->db->get_where('issuenote_dtl', [
+                'SalesInvNo' => $issueNoteNo
+            ]);
+
+            if ($query->num_rows() > 0) {
+                foreach ($query->result_array() as $row) {
+                    $isEmi = $row['IsEmi'];
+                    $isSerial = $row['IsSerial'];
+                    $emi_noArr = $row['EmiNo'];
+                    $serial_noArr = $row['SalesSerialNo'];
+                    $product_codeArr = $row['SalesProductCode'];
+                    $location = $row['SalesInvLocation'];
+
+                    if ($isSerial == 1 && $isEmi == 0) {
+                        $this->db->update('productserialstock', [
+                            'Quantity' => 1
+                        ], [
+                            'ProductCode' => $product_codeArr,
+                            'Location' => $location,
+                            'SerialNo' => $serial_noArr
+                        ]);
+                    }
+
+                    if ($isSerial == 0 && $isEmi == 1) {
+                        $this->db->update('productimeistock', [
+                            'Quantity' => 1
+                        ], [
+                            'ProductCode' => $product_codeArr,
+                            'Location' => $location,
+                            'EmiNo' => $emi_noArr
+                        ]);
+                    }
+
+                    if ($isSerial == 1 && $isEmi == 1) {
+                        $this->db->update('productserialemistock', [
+                            'Quantity' => 1
+                        ], [
+                            'ProductCode' => $product_codeArr,
+                            'Location' => $location,
+                            'SerialNo' => $serial_noArr
+                        ]);
+                    }
+
+                    // Update price and stock
+                    $proCode = $row['SalesProductCode'];
+                    $totalGrnQty = $row['SalesQty'] + $row['SalesFreeQty'];
+                    $loc = $row['SalesInvLocation'];
+                    $pl = $row['SalesPriceLevel'];
+                    $costp = $row['SalesCostPrice'];
+                    $selp = $row['SalesUnitPrice'];
+
+                    if($pl==1){
+                        $this->db->query("CALL SPT_UPDATE_PRICE_STOCK('$proCode','$totalGrnQty','1','$costp','$selp','$loc')");
+                         $this->db->query("CALL SPT_UPDATE_PRO_STOCK('$proCode','$totalGrnQty',0,'$loc')");
+                    }else{
+                        $this->Stock_model->updateStock($proCode, $loc, $row['SalesQty'], $selp);
+                    }
+
+                   
+                }
+            }
+
+            // Update issue note header
+            $this->db->update('issuenote_hed', [
+                'InvIsCancel' => 1,
+                'salesInvRemark' => $remark
+            ], [
+                'SalesInvNo' => $issueNoteNo
+            ]);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === FALSE) {
+            echo json_encode(['status' => 'error', 'message' => 'Cancel failed']);
+        } else {
+            echo json_encode(['status' => 'success', 'message' => 'Issue note cancelled successfully']);
+        }
+        die;
+    }
+
+
+    
 
     public function saveDeliveryNote() {
         // print_r($_POST);die;
@@ -3751,5 +3989,338 @@ public function all_delivery_note() {
 
         echo $this->datatables->generate();
         die();
+    }
+
+    public function addIssueNote() {
+        $id = isset($_GET['id'])?$_GET['id']:NULL;
+        $job = isset($_GET['job'])?$_GET['job']:NULL;
+        $type = isset($_GET['type'])?$_GET['type']:NULL;
+        $sup = isset($_GET['sup'])?$_GET['sup']:0;
+        $cus = isset($_GET['cus'])?$_GET['cus']:NULL;
+        $regno = isset($_GET['regno'])?$_GET['regno']:NULL;
+        $action = isset($_GET['action'])?$_GET['action']:1;
+        $this->load->helper('url');
+        $this->page_title->push(('Add Issue Note'));
+        $this->breadcrumbs->unshift(1, 'Issue Note', 'admin/addSalesInvoice');
+        $this->data['pagetitle'] = $this->page_title->show();
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $location = $_SESSION['location'];
+        $id3 = array('CompanyID' => $location);
+        $this->data['inv'] =base64_decode($id);
+        $this->data['job'] =base64_decode($job);
+        $this->data['customer'] = $cus;
+        $this->data['regno']    = $regno;
+        $this->data['action']   = $action;
+        $this->data['company'] = $this->Job_model->get_data_by_where('company', $id3);
+        $this->data['plv'] = $this->Job_model->loadpricelevel();
+        $this->data['location'] = $this->db->select()->from('location')->get()->result();
+        $this->data['salesperson'] = $this->db->select()->from('salespersons')->get()->result();
+        $this->data['bank_acc']=$this->db->select('bank_account.*,bank.BankName')->from('bank_account')->join('bank','BankCode=acc_bank')->get()->result();
+        $this->data['bank'] = $this->db->select()->from('bank')->get()->result();
+        $this->data['sup'] = $this->db->select('SupCode AS id,SupName AS text')->from('supplier')->get()->result();
+        $this->data['vehicle_company'] = $this->db->select()->from('vehicle_company')->where('VComCategory', 3)->get()->result();
+
+        $this->template->admin_render('admin/sales/issuenote_add', $this->data);
+
+    }
+
+    public function saveIssueNote() {
+        // echo var_dump('aaa');die;
+        $location=$_SESSION['location'];
+        $this->load->model('admin/Salesinvoice_model');
+
+        $creditAmount = $_POST['creditAmount'];
+        if($creditAmount>0){
+            $SalesInvType=3;
+        }else{
+            $SalesInvType=$_POST['invType'];
+        }
+
+
+        if($_POST['action']==1 && $SalesInvType==1){
+            $grnNo = $this->Salesinvoice_model->get_max_code('IssueNoteNo');
+        }elseif($_POST['action']==1 && $SalesInvType==2){
+            $grnNo = $this->Salesinvoice_model->get_max_code('IssueNoteNo');
+        }elseif($_POST['action']==1 && $SalesInvType==3){
+            $grnNo = $this->Salesinvoice_model->get_max_code('IssueNoteNo');
+        }elseif ($_POST['action']==2) {
+            $grnNo = $_POST['grn_no'];
+        }
+
+//	    var_dump($grnNo);die();
+        $vehicleno = isset($_POST['regNo'])?$_POST['regNo']:'';
+        $salesorder = $_POST['salesorder'];
+        $invDate = date("Y-m-d H:i:s");
+        $grnDattime = date("Y-m-d H:i:s");
+        $invUser = $_POST['invUser'];
+        $total_amount = $_POST['total_amount'];
+        $cashAmount = $_POST['cashAmount'];
+        $creditAmount = $_POST['creditAmount'];
+        $chequeAmount = $_POST['chequeAmount'];
+        $advanceAmount = $_POST['advance_amount'];
+        $advancePayNo = $_POST['advance_pay_no'];
+        $returnAmount = $_POST['return_amount'];
+        $returnPayNo = $_POST['return_payment_no'];
+        $cardAmount = $_POST['cardAmount'];
+        $bankAmount = $_POST['bank_amount'];
+        $bank_account = $_POST['bankacc'];
+        $shipping = $_POST['shipping'];
+        $shipping_label = $_POST['shippingLabel'];
+        $total_discount = $_POST['total_discount'];
+        $total_net_amount = $_POST['total_net_amount'];
+        $total_cost = $_POST['total_cost'];
+        $location = $_SESSION['location'];
+        $customer = $_POST['cusCode'];
+        $isComplete = 0;
+        $totalGrnDiscount = $_POST['totalGrnDiscount'];
+        $totalProDiscount = $_POST['totalProDiscount'];
+        $totalVat = $_POST['totalVat'];
+        $totalNbt = $_POST['totalNbt'];
+        $isTotalVat = $_POST['isTotalVat'];
+        $isTotalNbt = $_POST['isTotalNbt'];
+        $nbtRatioRate = $_POST['nbtRatioRate'];
+        $price_level = $_POST['price_level'];
+        $po_number = $_POST['po_number'];
+        $newsalesperson = $_POST['newsalesperson'];
+        $SalesInsCompany = $_POST['insCompany'];
+        $com_amount = $_POST['com_amount'];
+        $compayto = $_POST['compayto'];
+        $receiver_name = $_POST['receiver_name'];
+        $receiver_nic = $_POST['receiver_nic'];
+        $remark = $_POST['remark'];
+        $customerPayment =  $cashAmount+ $chequeAmount+ $cardAmount+$advanceAmount+$bankAmount+$returnAmount;
+        $cashAmount=$total_net_amount-$creditAmount-$cardAmount-$chequeAmount-$advanceAmount-$bankAmount-$returnAmount;
+        $totalDisPerent = ($totalGrnDiscount*100)/($total_amount-$totalProDiscount);
+        if($customerPayment>=$total_net_amount){
+            $isComplete = 1;
+        }else{
+            $isComplete = 0;
+        }
+        //add to here
+        $grnHed = array(
+            'AppNo' => '1','SalesInvNo' => $grnNo,'SalesOrderNo'=>'','SalesVehicle'=>$vehicleno,'SalesInsCompany'=>$SalesInsCompany,'SalesLocation' => $location,'SalesOrgDate' => $grnDattime,
+            'SalesDate' => $invDate,'SalesCustomer' => $customer,'SalesInvType' => $SalesInvType,'SalesInvAmount' => $total_amount,'SalesNetAmount' => $total_net_amount,
+            'SalesCashAmount'=>$cashAmount,'SalesShippingLabel'=>$shipping_label,'SalesShipping'=>$shipping,'SalesBankAcc'=>$bank_account,'SalesBankAmount'=>$bankAmount,
+            'SalesCCardAmount'=>$cardAmount,'SalesCreditAmount'=>$creditAmount,'SalesChequeAmount'=>$chequeAmount,'SalesCustomerPayment'=>$customerPayment,
+            'SalesAdvancePayment'=>$advanceAmount,'AdvancePayNo'=>$advancePayNo,'SalesReturnPayment'=>$returnAmount,'SalesDisAmount' => $total_discount,
+            'SalesDisPercentage' => $totalDisPerent,'SalesInvUser' => $invUser,'IsComplete' => $isComplete,'InvIsCancel'=>0,'SalesIsNbt'=>$isTotalNbt,'SalesIsVat'=>$isTotalVat,
+            'SalesNbtRatio'=>$nbtRatioRate,'SalesNbtAmount'=>$totalNbt,'SalesVatAmount'=>$totalVat,'SalesPONumber'=>$po_number,'SalesPerson'=>$newsalesperson,
+            'SalesReceiver'=>$receiver_name,'SalesRecNic'=>$receiver_nic,'SalesCommsion'=>$com_amount,'SalesComCus'=>$compayto,'salesInvRemark'=>$remark
+        );
+
+        $id3 = array('CompanyID' => $location);
+        $this->data['company'] = $this->Salesinvoice_model->get_data_by_where('company',$id3);
+        $company = $this->data['company']['CompanyName'];
+//        var_dump($SalesInvType,$grnNo,$id3);die();
+        if($_POST['action']==1){
+            $res2= $this->Salesinvoice_model->saveIssueNote($grnHed,$_POST,$grnNo,$totalDisPerent);
+        }elseif ($_POST['action']==2) {
+            $grnHed = array(
+                'AppNo' => '1','SalesInvNo' => $grnNo,'SalesOrderNo'=>'','SalesVehicle'=>$vehicleno,'SalesInsCompany'=>$SalesInsCompany,'SalesLocation' => $location,
+                'SalesOrgDate' => $grnDattime,'SalesCustomer' => $customer,'SalesInvType' => $SalesInvType,'SalesInvAmount' => $total_amount,
+                'SalesNetAmount' => $total_net_amount,'SalesCashAmount'=>$cashAmount,'SalesShippingLabel'=>$shipping_label,'SalesShipping'=>$shipping,
+                'SalesBankAcc'=>$bank_account,'SalesBankAmount'=>$bankAmount,'SalesCCardAmount'=>$cardAmount,'SalesCreditAmount'=>$creditAmount,
+                'SalesChequeAmount'=>$chequeAmount,'SalesCustomerPayment'=>$customerPayment,'SalesAdvancePayment'=>$advanceAmount,'AdvancePayNo'=>$advancePayNo,
+                'SalesReturnPayment'=>$returnAmount,'SalesDisAmount' => $total_discount,'SalesDisPercentage' => $totalDisPerent,'SalesInvUser' => $invUser,
+                'IsComplete' => $isComplete,'InvIsCancel'=>0,'SalesIsNbt'=>$isTotalNbt,'SalesIsVat'=>$isTotalVat,'SalesNbtRatio'=>$nbtRatioRate,'SalesNbtAmount'=>$totalNbt,
+                'SalesVatAmount'=>$totalVat,'SalesPONumber'=>$po_number,'SalesPerson'=>$newsalesperson,'SalesReceiver'=>$receiver_name,'SalesRecNic'=>$receiver_nic,
+                'SalesCommsion'=>$com_amount,'SalesComCus'=>$compayto,'salesInvRemark'=>$remark
+            );
+            $res2= $this->Salesinvoice_model->updateIssueNote($grnHed,$_POST,$grnNo,$totalDisPerent);
+        }
+
+        $return = array(
+            'InvNo' => $grnNo,
+            'InvDate' => $invDate
+        );
+
+        $return['fb'] = $res2;
+        echo json_encode($return);
+        die;
+    }
+
+    public function allIssueNote() {
+        $q = isset($_GET['q'])?$_GET['q']:NULL;
+        /* Title Page */
+        $this->page_title->push('Issue Note');
+        $this->data['pagetitle'] = 'All Issue Notes';
+
+        /* Breadcrumbs */
+        $this->breadcrumbs->unshift(1, 'Sales', 'admin/sales/view_job');
+        $this->breadcrumbs->unshift(1, 'All Issue Notes', 'admin/sales/all_sales_order');
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+        $this->data['q'] = $q;
+
+        $this->template->admin_render('admin/sales/issuenote_all', $this->data);
+    }
+
+    public function loadallIssueNote() {
+
+        $location = $_SESSION['location'];
+        $this->datatables->select('issuenote_hed.*,customer.CusName,customer.MobileNo');
+        $this->datatables->from('issuenote_hed')->join('customer','customer.CusCode=issuenote_hed.SalesCustomer');
+
+        echo $this->datatables->generate();
+        die();
+    }
+
+    public function view_issue_note($inv=null) {
+
+        $this->load->model('admin/Salesinvoice_model');
+        $invNo=base64_decode($inv);
+        /* Title Page */
+
+        $id = isset($_GET['id'])?$_GET['id']:NULL;
+        $type = isset($_GET['type'])?$_GET['type']:NULL;
+        $sup = isset($_GET['sup'])?$_GET['sup']:0;
+
+        $this->page_title->push('Sales Invoice');
+        $this->data['pagetitle'] = 'Sales Invoice-'.$invNo;
+
+        /* Breadcrumbs */
+        $this->breadcrumbs->unshift(1, 'Sales', 'admin/sales/');
+        $this->breadcrumbs->unshift(1, 'Sales Invoice', 'admin/sales/view_sales_invoice');
+        $this->data['breadcrumb'] = $this->breadcrumbs->show();
+
+        $location = $this->db->select('SalesLocation')->from('issuenote_hed')->where('SalesInvNo', $invNo)->get()->row()->SalesLocation;
+        $id3 = array('CompanyID' => $location);
+        $this->data['company'] = $this->Job_model->get_data_by_where('company', $id3);
+
+        $this->data['jobtypes'] = $this->db->select()->from('jobtype')->order_by("jobtype_order", "asc")->get()->result();
+        $this->data['id'] = $id;
+        $this->data['type'] = $type;
+        $this->data['sup'] = $sup;
+        $this->data['invNo'] = $invNo;
+
+        $this->data['title'] = 'Invoice';
+        $this->data['titleno'] = $invNo;
+        $this->data['balancetxt'] = 'TOTAL PAYABLE';
+        $balance=$this->db->select('SalesCreditAmount')->from('issuenote_hed')->where('SalesInvNo',$invNo)->get()->row()->SalesCreditAmount;
+        $this->data['balance'] = "Rs. ".number_format($balance,2);
+
+
+        $this->data['invType']= $this->db->select('SalesInvType')->from('issuenote_hed')->where('SalesInvNo',$invNo)->get()->row();
+
+        $this->data['invHed']= $this->db->select('issuenote_hed.*,users.first_name,users.last_name,users.last_name ,vehicle_company.VComName')
+            ->from('issuenote_hed')->join('users','issuenote_hed.SalesInvUser=users.id','left')->join('vehicle_company','vehicle_company.VComId=issuenote_hed.SalesInsCompany','left')
+            ->where('SalesInvNo',$invNo)->get()->row();
+        $IsPayment =  $this->db->select('InvNo')->from('invoicesettlementdetails')->where('InvNo',$invNo)->get()->num_rows();
+        if($IsPayment>0){
+            $this->data['ispayment']=$IsPayment;
+        }else{
+            $this->data['ispayment']=0;
+        }
+        $cusCode =  $this->db->select('SalesCustomer')->from('issuenote_hed')->where('SalesInvNo',$invNo)->get()->row()->SalesCustomer;
+        $regNo =  $this->db->select('SalesVehicle')->from('issuenote_hed')->where('SalesInvNo',$invNo)->get()->row()->SalesVehicle;
+
+        $this->data['invCus']= $this->db->select('customer.*')->from('customer')->where('customer.CusCode',$cusCode)->get()->row();
+        $this->data['invVehi']= $this->db->select('vehicledetail.ChassisNo,vehicledetail.contactName,make.make,model.model')
+            ->from('vehicledetail')
+            ->join('make','make.make_id=vehicledetail.Make','left')->join('model','model.model_id=vehicledetail.Model','left')
+            ->where('CusCode',$cusCode)->where('vehicledetail.RegNo',$regNo)->get()->row();
+
+        $this->data['invSales']= $this->db->select('salespersons.RepName')
+            ->from('issuenote_dtl')
+            ->join('salespersons', 'issuenote_dtl.SalesPerson = salespersons.RepID', 'left')
+            ->where('issuenote_dtl.SalesInvNo',$invNo)->get()->row();
+
+        $this->data['invDtl']=$this->db->select('issuenote_dtl.*,product.*')
+            ->from('issuenote_dtl')
+            ->join('product', 'issuenote_dtl.SalesProductCode = product.ProductCode', 'INNER'
+            )->where('issuenote_dtl.SalesInvNo', $invNo)
+            ->order_by('issuenote_dtl.SalesInvLineNo','ASC')->get()->result();
+        //invoice cancel
+        $this->data['invCancel']=$this->db->select('cancelsalesinvoice.*,users.first_name,users.last_name')
+            ->from('cancelsalesinvoice')->join('users', 'cancelsalesinvoice.CancelUser = users.id', 'INNER')
+            ->where('cancelsalesinvoice.SalesInvoiceNo', $invNo)->order_by('CancelDate','DESC')->get()->row();
+
+        //invoice updates
+        $this->data['invUpdate']=$this->db->select('editinvoices.*,users.first_name,users.last_name')
+            ->from('editinvoices')->join('users', 'editinvoices.UpdateUser = users.id', 'INNER')
+            ->where('editinvoices.InvoiceNo', $invNo)->where('editinvoices.EditType', 1)->order_by('UpdateDate','DESC')->get()->result();
+
+        $this->data['invDtlArr']=$this->Salesinvoice_model->getSalesInvoiceDtlbyid($invNo);
+        $this->data['returnDtlArr']=$this->Salesinvoice_model->getSalesReturnDtlbyid($invNo);
+
+        $this->data['sale']=$this->db->select('issuenote_hed.*,salesinvoicepaydtl.*')
+            ->from('issuenote_hed')->join('salesinvoicepaydtl','salesinvoicepaydtl.SalesInvNo=issuenote_hed.SalesInvNo')
+            ->where('issuenote_hed.SalesCustomer',$cusCode)->where('issuenote_hed.InvIsCancel',0)->get()->result();
+
+        $this->data['term'] = $this->db->select()->from('invoice_condition')->where('InvType', 1)->get()->result();
+        $this->template->admin_render('admin/sales/issuenote_view', $this->data);
+
+    }
+
+    public function getIssueNoteById(){
+        $this->load->model('admin/Salesinvoice_model');
+        $soNo = $_POST['saleInvoiceNo'];
+        $cusCode = $this->db->select('SalesCustomer')->from('issuenote_hed')->where('SalesInvNo',$soNo)->get()->row()->SalesCustomer;
+
+        $arr['cus_data'] = $this->Job_model->getCustomersDataById($cusCode);
+        $arr['si_hed'] = $this->db->select('issuenote_hed.*')
+            ->from('issuenote_hed')
+            ->where('SalesInvNo', $soNo)->get()->row();
+
+        $arr['si_dtl'] = $this->db->select('issuenote_dtl.*,product.*')->from('issuenote_dtl')
+            ->join('product', 'product.ProductCode = issuenote_dtl.SalesProductCode','left')
+            ->where('issuenote_dtl.SalesInvNo', $soNo)->order_by('issuenote_dtl.SalesInvLineNo')->get()->result();
+        $arr['si_dtl_arr'] = $this->Salesinvoice_model->getSalesInvoiceDtlbyid($soNo);
+
+        echo json_encode($arr);
+        die;
+    }
+
+    public function getIssueNoteDataByJobNo(){
+        $jobNo = $_POST['jobNo'];
+        $isInvoice=0;
+        // $estimateNo = $_POST['estimateNo'];
+        // $supplemetNo = $_POST['supplemetNo'];
+        $isInvoice = $this->db->select('JobCardNo')->from('jobinvoicehed')->where('JobCardNo', $jobNo)->where('IsCancel', 0)->get()->num_rows();
+        $cusCode = $this->db->select('JCustomer')->from('jobcardhed')->where('JobCardNo', $jobNo)->get()->row()->JCustomer;
+        $regNo =$this->db->select('JRegNo')->from('jobcardhed')->where('JobCardNo', $jobNo)->get()->row()->JRegNo;
+        $isIssueNote = $this->db->select('SalesInvNo')->from('issuenote_hed')->where('SalesPONumber', $jobNo)->where('InvIsCancel',0)->get()->num_rows();
+        if($isIssueNote>0){
+            $issueNo =$this->db->select('SalesInvNo')->from('issuenote_hed')->where('SalesPONumber', $jobNo)->where('InvIsCancel',0)->get()->row()->SalesInvNo;
+           
+
+            $arr['est_hed'] = $this->db->select()->from('issuenote_hed')->where('SalesInvNo', $issueNo)->where('InvIsCancel',0)->get()->row();
+            $arr['est_dtl'] = $this->db->select('d.*')
+                ->from('issuenote_dtl d')
+                ->join('issuenote_hed h', 'h.SalesInvNo = d.SalesInvNo')
+                ->where('d.JobNo', $jobNo)
+                ->where('h.InvIsCancel', 0)
+                ->order_by('d.SalesInvNo', 'ASC')
+                ->get()
+                ->result();
+                
+            $arr['job_est'] = $this->Job_model->getEstimateDtlbyid($issueNo);
+
+
+        }else{
+            $arr['est_dtl'] =null;
+            $arr['est_hed']=null;
+            $arr['job_est'] =null;
+        }
+        $arr['isInv'] = $isInvoice;
+//        var_dump($isInvoice);die();
+        $arr['cus_data'] = $this->Job_model->getCustomersDataById($cusCode);
+        $arr['vehicle_data'] = $this->Job_model->getVehicleDataById($regNo);
+        $arr['job_data'] = $this->db->select()->from('jobcardhed')->where('JobCardNo', $jobNo)->get()->row();
+        $arr['job_desc'] = $this->db->select()->from('jobcarddtl')->where('JobCardNo', $jobNo)->get()->result();
+
+        echo json_encode($arr);
+        die;
+    }
+
+    public function getCustomersDataByJob()
+    {
+        $jobNo = $_POST['jobNo'];
+
+        $arr['jobDtl']=  $this->db->select('customer.CusCode')
+            ->from('jobcardhed')
+            ->join('customer','customer.CusCode=jobcardhed.JCustomer')
+            ->where('jobcardhed.JobCardNo',$jobNo)->get()->row();
+        echo json_encode($arr);
+        die;
     }
 }

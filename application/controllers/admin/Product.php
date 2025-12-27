@@ -10,6 +10,7 @@ class Product extends Admin_Controller {
         /* Load :: Common */
         $this->load->helper('number');
         $this->load->model('admin/Product_model');
+        $this->load->model('admin/Transer_model');
         date_default_timezone_set("Asia/Colombo");
     }
 
@@ -62,14 +63,17 @@ class Product extends Admin_Controller {
 
     public function loadmodal_editproduct() {
         $productid = $_REQUEST['id'];
-        $this->data['product']    = $this->Product_model->loadproductbyid($productid);
+        $this->data['product'] = $this->Product_model->loadproductbyid($productid);
+
+ 
         $this->data['productpl']  = $this->Product_model->loadpricelistbyid($productid);
         $this->data['productloc'] = $this->Product_model->loadproductlocationbyid($productid);
-        
+        $this->data['productStockpls']  = $this->Product_model->loadPriceStockPrice($productid);
         $this->data['brand'] = $this->db->select('*')->from('productbrand')->get()->result();
         $this->data['quality'] = $this->db->select('*')->from('productquality')->get()->result();
         $this->data['alldepartment']    = $this->Product_model->loaddepartment();
         $this->data['allsubdepartment'] = $this->Product_model->loadsubdepartment($this->data['product']->DepCode);
+         $this->data['loaddepDis'] = $this->Product_model->loaddepDis($this->data['product']->DepCode);
         $this->data['allcatogery']      = $this->Product_model->loadcategory($this->data['product']->SubDepCode,$this->data['product']->DepCode);
         $this->data['allsubcategory']   = $this->Product_model->loadsubcategory($this->data['product']->CategoryCode,$this->data['product']->SubDepCode,$this->data['product']->DepCode);
 
@@ -77,7 +81,7 @@ class Product extends Admin_Controller {
         $this->data['ploption']     = $this->Product_model->loadpricelevel();
         $this->data['measure']      = $this->Product_model->loadmeasuretype();
         $this->data['location']     = $this->Product_model->get_data('location')->result();
-        // $this->data['racks'] = $this->Product_model->get_data('rack')->result();
+
         $this->load->view('admin/product/editproduct_modal', $this->data);
     }
 
@@ -108,14 +112,43 @@ class Product extends Admin_Controller {
         }
     }
 
+    // public function allProducts() {
+
+
+    //     $this->load->library('Datatables');
+    //     $this->datatables->select('product.*');
+    //     $this->datatables->from('product');
+    //     echo $this->datatables->generate();
+    //     die;
+    // }
+
+
     public function allProducts() {
         $this->load->library('Datatables');
-        $this->datatables->select('product.*, productprice.ProductPrice');
-        $this->datatables->from('product');
-        $this->datatables->join('productprice','productprice.ProductCode=product.ProductCode', 'inner');
-        echo $this->datatables->generate('json', 'ISO-8859-1');
-        die;
+
+        $this->datatables->select('
+            p.ProductCode,
+            p.Prd_Description,
+            p.Prd_AppearName,
+            p.Prd_CostPrice,
+            p.Prd_SetAPrice,
+            IFNULL((SELECT pp.ProductPrice 
+                    FROM productprice pp 
+                    WHERE pp.ProductCode = p.ProductCode 
+                    AND pp.PL_No = 1 
+                    LIMIT 1), 0) AS retail_price,
+            IFNULL((SELECT pp.ProductPrice 
+                    FROM productprice pp 
+                    WHERE pp.ProductCode = p.ProductCode 
+                    AND pp.PL_No = 2 
+                    LIMIT 1), 0) AS wholesale_price
+        ', false);
+
+        $this->datatables->from('product p');
+        echo $this->datatables->generate();
+        die();
     }
+
 
     public function get_products() {
         if (isset($_GET['term'])) {
@@ -151,8 +184,9 @@ class Product extends Admin_Controller {
         $dep = $_POST['proCode'];
         $pl = $_POST['prlevel'];
         $location = $_POST['location'];
-        $this->data['product'] = $this->Product_model->loadproductbyserial($dep, $pl, $location);
-        echo json_encode($this->data['product']);
+//        $this->data['product'] = $this->Product_model->loadproductbyserial($dep, $pl, $location);
+        $arr['product'] = $this->Product_model->loadproductbyserial($dep, $pl, $location);
+        echo json_encode($arr);
         die;
     }
     
@@ -170,8 +204,22 @@ class Product extends Admin_Controller {
         $dep = $_POST['proCode'];
         $pl = $_POST['prlevel'];
         $location = $_POST['location'];
+        $price = $_POST['price'];
         $arr['product'] = $this->Product_model->loadproductbypcode($dep, $pl);
         $arr['serial'] = $this->Product_model->loadproductbyserialArray($dep, $pl,$location);
+         $arr['price_stock']  = $this->Product_model->loadpricestockbyid($dep,$location,$price,$pl);
+        echo json_encode($arr);
+        die;
+    }
+       public function getProductByIdforGrnnew() {
+        $dep = $_POST['proCode'];
+        $pl = $_POST['prlevel'];
+        $location = $_POST['location'];
+        $price = $_POST['price'];
+        $arr['product'] = $this->Product_model->loadproductbypcodegrn($dep);
+        $arr['productwhole'] = $this->Product_model->loadproductbypcodegrnWhole($dep);
+       // $arr['serial'] = $this->Product_model->loadproductbyserialArray($dep, $pl,$location);
+        // $arr['price_stock']  = $this->Product_model->loadpricestockbyid($dep,$location,$price,$pl);
         echo json_encode($arr);
         die;
     }
@@ -190,18 +238,45 @@ class Product extends Admin_Controller {
         $dep = $_POST['proCode'];
         $pl = $_POST['prlevel'];
         $location = $_POST['location'];
+        $locationS = $_SESSION['location'];
+        $price = $_POST['price'];
         $arr['product'] = $this->Product_model->loadproductbypcode($dep, $pl);
+        $arr['productstock']  = $this->Product_model->loadproductstockbyid($dep,$locationS);
         $arr['serial'] = $this->Product_model->loadproductbyserialArrayByCode($dep, $pl,$location);
+        $arr['price_stock']  = $this->Product_model->loadpricestockbyid($dep,$location,$price, $pl);
+        $arr['emei'] = $this->Product_model->loadproductbyEMEIArrayByCode($dep, $pl,$location);
+       
         echo json_encode($arr);
         die;
     }
+
+    public function loadproductSerial() {
+        $q = $_GET['q'];
+        $product= $_REQUEST['proCode'];
+        $location= $_REQUEST['location'];
+        echo $this->Transer_model->loadproductSerial($product, $q, $location);
+        die;
+    }
     
+ public function loadproductEmei() {
+        $q = $_GET['q'];
+        $product= $_REQUEST['proCode'];
+        $location= $_REQUEST['location'];
+        echo $this->Transer_model->loadproductEmei($product, $q, $location);
+        die;
+    }
+
     public function getProductByBarCodeforSTO() {
-        $dep = $_POST['proCode'];
+        $dep = $_POST['proCode'];        
         $pl = $_POST['prlevel'];
         $location = $_POST['location'];
+        $locationS = $_SESSION['location'];
+        $price = $_POST['price'];
         $arr['product'] = $this->Product_model->loadproductbyserial($dep, $pl, $location);
+        $arr['productstock']  = $this->Product_model->loadproductstockbyidForSerial($dep,$locationS);
         $arr['serial'] = $this->Product_model->loadproductbyserialArrayByCode($dep, $pl, $location);
+        $arr['price_stock']  = $this->Product_model->loadpricestockbyid($dep,$location,$price,$pl);
+         $arr['emei'] = $this->Product_model->loadproductbyEMEIArrayByCode($dep, $pl,$location);
         echo json_encode($arr);
         die;
     }
@@ -284,6 +359,7 @@ class Product extends Admin_Controller {
         $data['SubCategoryCode'] = isset($_POST['sub_category']) ? $_POST['sub_category'] : 0;
 
         $data['BarCode'] = $barcode;
+        $data['branchCost'] = $_POST['branchCostprice'];
 
         $data['Prd_UPC'] = $_POST['unitpercase'];
         $data['Prd_UOM'] = $_POST['unitpermeasure'];
@@ -374,6 +450,7 @@ class Product extends Admin_Controller {
         $data['CategoryCode'] = $_POST['category'];
         $data['SubCategoryCode'] = $_POST['sub_category'];
 
+        $data['branchCost'] = $_POST['branchCostprice'];
         $data['BarCode'] = $_POST['barcode'];
         $data['Prd_UPC'] = $_POST['unitpercase'];
         $data['Prd_UOM'] = $_POST['unitpermeasure'];
@@ -417,6 +494,7 @@ class Product extends Admin_Controller {
         }
 
         if (isset($_POST['pl'])) {
+            $this->db->delete('productprice',array('ProductCode' => $productcode));
             foreach ($_POST['pl'] AS $key => $val) {
                 $plrowdata = array(
                     'ProductCode' => $productcode,
@@ -424,7 +502,8 @@ class Product extends Admin_Controller {
                     'ProductPrice' => $val
                 );
                 if ($val != '' || $_POST['pl'][$key]) {
-                    $this->Product_model->update_data('productprice', $plrowdata, array('ProductCode' => $productcode, 'PL_No' => $key));
+                    $this->db->insert('productprice', $plrowdata);
+                    // $this->Product_model->update_data('productprice', $plrowdata, array('ProductCode' => $productcode, 'PL_No' => $key));
                 }
             }
         }
@@ -432,6 +511,63 @@ class Product extends Admin_Controller {
         $this->Product_model->update_data('productcondition', $productcondition, array('Productcode' => $productcode));
         echo 'success';
         die;
+    }
+
+      public function updateNewSellingPrice(){
+      
+        $proCode  = $this->input->post('productCode', true);  
+        $oldPrice = $this->input->post('old_price',   true);
+        $newPrice = $this->input->post('new_price',   true);
+        $newwholeprice = $this->input->post('newwholeprice',   true);
+        
+        
+        // if (!is_numeric($oldPrice) || !is_numeric($newPrice) || !is_numeric($newwholeprice)) {
+        //     echo json_encode(['status' => 'error', 'message' => 'Invalid price input.']);
+        //     exit;
+        // }
+
+       if($newPrice>0){
+            $this->db->where('PSCode', $proCode)
+                ->where('Price',  (float) $oldPrice)
+                ->set  ('Price',  (float) $newPrice)
+                ->update('pricestock');
+
+            $this->db->where('ProductCode',$proCode)
+                ->set('Prd_SetAPrice', (float) $newPrice)
+                ->update('product');
+
+        //    $this->db->where('ProductCode',$proCode)->where('PL_No',1)
+        //     ->set('ProductPrice', (float) $newPrice)
+        //     ->update('productprice');
+
+            $this->db->set('ProductPrice', (float) $newPrice)
+            ->where('ProductCode', $proCode)
+            ->where('PL_No', 1)
+            ->update('productprice');
+       }
+       
+       if($newwholeprice>0){
+        
+            $this->db->where('PSCode', $proCode)
+                ->where('Price',  (float) $oldPrice)
+                ->set  ('WholesalesPrice',  (float) $newwholeprice)
+                ->update('pricestock');
+
+            $this->db->set('ProductPrice', (float) $newwholeprice)
+            ->where('ProductCode', $proCode)
+            ->where('PL_No', 2)
+            ->update('productprice');
+       }
+         
+       
+       if ($this->db->affected_rows() === 1) {
+            echo json_encode(['status' => 'success', 'message' => 'Price updated successfully.']);
+        } else {
+            echo json_encode(['status' => 'warning', 'message' => 'No change made.']);
+        }
+
+        exit;
+
     }
 
 }
