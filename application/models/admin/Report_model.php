@@ -2058,7 +2058,7 @@ class Report_model extends CI_Model {
 
         $this->db->select('product.ProductCode,
                             product.Prd_Description,
-                             pricestock.UnitCost AS Prd_CostPrice,
+                            pricestock.UnitCost AS Prd_CostPrice,
                             location.location,
                             productimeistock.Quantity,
                             productimeistock.EmiNo,

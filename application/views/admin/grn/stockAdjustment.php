@@ -349,8 +349,9 @@ $("#saletable").on('click', '.edit', function() {
     var stockChange = parseFloat($("#stockChange_" + id).val());
     var $row = $(this).closest("tr");
     var invoiceNo = $row.find("td:eq(4)").text().trim();
-    var price = $row.find("td:eq(9)").text().trim();
-   
+    var price = $("#priceChange_" + id).val();
+    var unitCost = $("#unitCostChange_" + id).val();
+
 
 
     if (invoiceNo != '--') {
@@ -371,6 +372,9 @@ $("#saletable").on('click', '.edit', function() {
     if (confirm(
             "Are you want to Update Stock ? Please Check Is correct Product Code"
         )) {
+
+      
+
         $.ajax({
             type: "post",
             url: baseUrl + '/grn/updateStock',
@@ -475,9 +479,13 @@ function drawRow(rowData, index) {
                     },
                     dataType: "json",
                     success: function(res) {
+                      
                         if (res.status) {
                             var qty = res.quantity;
-                            var input = $("#stockChange_" + productCode);
+                            var price = res.price;
+                            var unitCost = res.unitCost;
+
+                              var input = $("#stockChange_" + productCode);
                             var td = input.parent();
 
 
@@ -488,6 +496,17 @@ function drawRow(rowData, index) {
 
                             input.val(qty);
                             input.after(document.createTextNode(qty));
+
+                            var priceInput = $("#priceChange_" + productCode);
+                            priceInput.val(price);
+
+
+                            var priceInput = $("#priceChange_" + productCode);
+                            priceInput.val(price);
+                            var unitCostInput = $("#unitCostChange_" + productCode);
+                            unitCostInput.val(unitCost);
+
+
                         } else {
                             alert("No stock for this EMEI");
                         }
@@ -504,6 +523,41 @@ function drawRow(rowData, index) {
 
         row.append($("<td></td>").append(select));
 
+    }
+
+    else if(rowData[index].serial_list && rowData[index].serial_list.length > 0){
+        row.append($("<td>--</td>"));
+    row.append($("<td><input class='form-control' type='number' step='any' value='" + rowData[index].Stock +
+        "' name='stockChange_" + rowData[index].ProductCode + "' id='stockChange_" + rowData[index]
+        .ProductCode + "'>" + rowData[index].Stock + "</td>"));
+
+    row.append($("<td>" + rowData[index].Prd_ROL + "</td>"));
+    row.append($("<td>" + rowData[index].Prd_ROQ + "</td>"));
+    row.append(
+    $("<td></td>").append(
+        "<input disabled  class='form-control' type='number' step='any' " +
+        "value='" + rowData[index].Prd_CostPrice + "' " +
+        "name='unitCostChange_" + rowData[index].ProductCode + "' " +
+        "id='unitCostChange_" + rowData[index].ProductCode + "'>"
+    )
+);
+
+
+   row.append(
+    $("<td></td>").append(
+        "<input disabled class='form-control' type='number' step='any' " +
+        "value='" + rowData[index].Prd_SetAPrice + "' " +
+        "name='priceChange_" + rowData[index].ProductCode + "' " +
+        "id='priceChange_" + rowData[index].ProductCode + "'>"
+    )
+);
+
+
+    row.append($("<td>" + rowData[index].SupName + "</td>"));
+    row.append($("<td><button class='btn btn-primary edit' id='saveStock' name='saveStock' value='" + rowData[index]
+        .ProductCode + "'disabled >Save</button></td>"));
+
+        return;
     } else {
 
         row.append($("<td>--</td>"));
@@ -515,11 +569,30 @@ function drawRow(rowData, index) {
         .ProductCode + "'>" + rowData[index].Stock + "</td>"));
     row.append($("<td>" + rowData[index].Prd_ROL + "</td>"));
     row.append($("<td>" + rowData[index].Prd_ROQ + "</td>"));
-    row.append($("<td>" + rowData[index].Prd_CostPrice + "</td>"));
-    row.append($("<td>" + rowData[index].Prd_SetAPrice + "</td>"));
+    row.append(
+    $("<td></td>").append(
+        "<input disabled  class='form-control' type='number' step='any' " +
+        "value='" + rowData[index].Prd_CostPrice + "' " +
+        "name='unitCostChange_" + rowData[index].ProductCode + "' " +
+        "id='unitCostChange_" + rowData[index].ProductCode + "'>"
+    )
+);
+
+    row.append(
+    $("<td></td>").append(
+        "<input disabled class='form-control' type='number' step='any' " +
+        "value='" + rowData[index].Prd_SetAPrice + "' " +
+        "name='priceChange_" + rowData[index].ProductCode + "' " +
+        "id='priceChange_" + rowData[index].ProductCode + "'>"
+    )
+);
+
     row.append($("<td>" + rowData[index].SupName + "</td>"));
     row.append($("<td><button class='btn btn-primary edit' id='saveStock' name='saveStock' value='" + rowData[index]
         .ProductCode + "'>Save</button></td>"));
+
+
+        
 }
 
 

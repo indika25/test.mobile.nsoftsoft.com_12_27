@@ -244,7 +244,7 @@ class Grn_model extends CI_Model {
              
                 // $this->db->insert('goodsreceivenotedtl', $grnDtl);
 
-  $this->db->insert('goodsreceivenotedtl', $grnDtl);
+        $this->db->insert('goodsreceivenotedtl', $grnDtl);
         $err = $this->db->error();
         if (!empty($err['code'])) {
             $this->db->trans_rollback();
@@ -280,7 +280,15 @@ class Grn_model extends CI_Model {
                     }
                     else if($isSerialArr[$i]==0 && $sendisemiNo_Arr[$i] ==1){
                     //echo var_dump('$sendisemiNo_Arr[$i]' . '-' . $sendisemiNo_Arr[$i] . '-'. $product_codeArr[$i] . '-' .$location . '-' . $sendemiNo_Arr[$i] . '-' . $qtyArr[$i] . '-' . $grnNo);die;
-                    $this->db->insert('productimeistock', array('ProductCode'=> $product_codeArr[$i],'Location'=> $location,'EmiNo'=>$sendemiNo_Arr[$i],'Quantity'=>$qtyArr[$i],'GrnNo'=>$grnNo));
+                    $this->db->insert('productimeistock', 
+                    array('ProductCode'=> $product_codeArr[$i],
+                    'Location'=> $location,
+                    'EmiNo'=>$sendemiNo_Arr[$i],
+                    'Quantity'=>$qtyArr[$i],
+                    'GrnNo'=>$grnNo,
+                    'Price'=>$sell_priceArr[$i],
+                    'UnitCost'=>$cost_priceArr[$i]                   
+                      ));
                     
                 }else if ($isSerialArr[$i]==1 && $sendisemiNo_Arr[$i] ==1){
                          //echo var_dump('$sendaerialisemiNo_Arr[$i]' . $sendisemiNo_Arr[$i]);die;
@@ -304,7 +312,7 @@ class Grn_model extends CI_Model {
             }else{
                 $this->db->insert('productprice', array('ProductCode'=> $product_codeArr[$i],'PL_No'=> $price_levelArr[$i],'ProductPrice'=>$sell_priceArr[$i]));
             }
-$err = $this->db->error();
+        $err = $this->db->error();
         if (!empty($err['code'])) {
             $this->db->trans_rollback();
             log_message('error', 'productprice upsert error: ' . print_r($err, true));
@@ -556,6 +564,7 @@ if ($isSeralArr == 1 && $isEmiArr == 1) {
 
     $this->db->where('product.Prd_IsActive', 1);
 
+
     if (!empty($route)) {
         $this->db->where_in('productstock.Location', $route);
     }
@@ -592,6 +601,7 @@ if ($isSeralArr == 1 && $isEmiArr == 1) {
     $emiStock = [];
     if (!empty($productCodes)) {
         $query2 = $this->db->where_in('ProductCode', $productCodes)
+                        // ->where('Quantity >', 0)
                            ->get('productimeistock')
                            ->result();
 
@@ -624,7 +634,7 @@ if ($isSeralArr == 1 && $isEmiArr == 1) {
 
 public function getEmeiStocktoProduct($emei, $productCode)
 {
-    return $this->db->select('Quantity')
+    return $this->db->select('Quantity,Price,UnitCost')
                     ->from('productimeistock')
                     ->where('EmiNo', $emei)
                     ->where('ProductCode', $productCode)

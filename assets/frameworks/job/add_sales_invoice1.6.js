@@ -2471,6 +2471,11 @@ $(document).ready(function () {
     var remark = $("#remark").val();
     action = $("#action").val();
     var nbtRatioRate = $("#nbtRatioRate").val();
+      var $btn = $(this);
+    if ($btn.data("clicked")) return; 
+    $btn.data("clicked", true); 
+    $btn.prop("disabled", true);
+    
 
     $("#tbl_item tbody tr").each(function (rowIndex, element) {
       product_code.push($(this).attr("proCode"));
@@ -2552,6 +2557,7 @@ $(document).ready(function () {
     } else {
       maxSerialQty += parseFloat($("#maxSerial").val());
       $("#saveItems").attr("disabled", true);
+   
       $.ajax({
         type: "post",
         url: baseUrl + "/Salesinvoice/saveNewSalesInvoice",
@@ -2799,6 +2805,12 @@ $(document).ready(function () {
     action = $("#action").val();
     var nbtRatioRate = $("#nbtRatioRate").val();
 
+      var $btn = $(this);
+    if ($btn.data("clicked")) return; 
+    $btn.data("clicked", true); 
+    $btn.prop("disabled", true);
+
+
     $("#tbl_item tbody tr").each(function (rowIndex, element) {
       product_code.push($(this).attr("proCode"));
       serial_no.push($(this).attr("serial"));
@@ -2969,7 +2981,6 @@ $(document).ready(function () {
         emi_no: emi_noArr,
         isEmi: sendIsEmi,
       };
-
       $.ajax({
         type: "post",
         url: baseUrl + "/Salesinvoice/saveNewSalesInvoice",
@@ -3132,9 +3143,7 @@ $(document).ready(function () {
         },
       });
     }
-    // } else {
-    //     return false;
-    // }
+   
   });
 
   //===============save products without Payment Modal and print  ==============================
@@ -3214,7 +3223,11 @@ $(document).ready(function () {
     var remark = $("#remark").val();
     action = $("#action").val();
     var nbtRatioRate = $("#nbtRatioRate").val();
-
+  var $btn = $(this);
+    if ($btn.data("clicked")) return; 
+    $btn.data("clicked", true); 
+    $btn.prop("disabled", true);
+    
     $("#tbl_item tbody tr").each(function (rowIndex, element) {
       product_code.push($(this).attr("proCode"));
       serial_no.push($(this).attr("serial"));
@@ -3290,6 +3303,91 @@ $(document).ready(function () {
     } else {
       maxSerialQty += parseFloat($("#maxSerial").val());
       $("#saveItems").attr("disabled", true);
+
+var postData = {
+  remark: remark,
+  com_amount: com_amount,
+  compayto: compayto,
+  receiver_name: receiver_name,
+  receiver_nic: receiver_nic,
+  refferNo: refferNo,
+  regNo: registerNo,
+  cusCode: cusCode,
+  grn_no: poNo,
+  po_number: po_number,
+  insCompany: insCompany,
+  shippingLabel: shippingLabel,
+  shipping: shipping,
+  newsalesperson: newsalesperson,
+  action: action,
+  salesorder: salesorder,
+  invType: invType,
+  product_code: sendProduct_code,
+  serial_no: sendSerial_no,
+  qty: sendQty,
+  unit_price: sendUnit_price,
+  org_unit_price: sendOrgUnit_price,
+  discount_precent: sendDiscount_precent,
+  pro_discount: sendPro_discount,
+  total_net: sendTotal_net,
+  unit_type: sendUnit_type,
+  price_level: sendPrice_level,
+  upc: sendUpc,
+  case_cost: sendCaseCost,
+  freeQty: sendFree_qty,
+  cost_price: sendCost_price,
+  pro_total: sendPro_total,
+  isSerial: sendIsSerial,
+  proName: sendPro_name,
+  isVat: isVatArr,
+  isNbt: isNbtArr,
+  nbtRatio: nbtRatioArr,
+  proVat: proVatArr,
+  proNbt: proNbtArr,
+  salePerson: salePersonArr,
+  total_cost: totalCost,
+  totalProDiscount: totalProWiseDiscount,
+  totalGrnDiscount: totalGrnDiscount,
+  grnDate: grnDate,
+  invUser: invUser,
+  total_amount: total_amount,
+  total_discount: total_discount,
+  total_net_amount: totalNetAmount,
+  location: location,
+  supcode: supcode,
+  maxSerialQty: maxSerialQty,
+  serialAutoGen: serialAutoGen,
+  nbtRatioRate: nbtRatioRate,
+  isTotalVat: isTotalVat,
+  isTotalNbt: isTotalNbt,
+  totalVat: finalVat,
+  totalNbt: finalNbt,
+  bankacc: bankacc,
+  bank_amount: bank_amount,
+  cashAmount: cashAmount,
+  creditAmount: creditAmount,
+  chequeAmount: chequeAmount,
+  cardAmount: cardAmount,
+  advance_amount: advance_amount,
+  advance_pay_no: advance_payment_no,
+  return_payment_no: return_payment_no,
+  return_amount: return_amount,
+  ccAmount: ccAmountArr,
+  ccRef: ccRefArr,
+  ccType: ccTypeArr,
+  ccName: ccNameArr,
+  chequeNo: chequeNo,
+  bank: bank,
+  chequeReference: chequeReference,
+  chequeRecivedDate: chequeReciveDate,
+  chequeDate: chequeDate,
+  mchange: mchange,
+  warrantytype: warrantytypeArr,
+  emi_no: emi_noArr,
+  isEmi: sendIsEmi
+};
+
+
       $.ajax({
         type: "post",
         url: baseUrl + "/Salesinvoice/saveNewSalesInvoice",
@@ -3375,6 +3473,7 @@ $(document).ready(function () {
           emi_no: emi_noArr,
           isEmi: sendIsEmi,
         },
+
         success: function (data) {
           var resultData = JSON.parse(data);
           var feedback = resultData["fb"];

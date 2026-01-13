@@ -393,7 +393,11 @@ class Grn extends Admin_Controller {
     if ($result) {
         echo json_encode([
             'status' => true,
-            'quantity' => $result->Quantity
+            'quantity' => $result->Quantity,
+            'price' => $result->Price,
+            'unitCost' => $result->UnitCost
+            
+            
         ]);
     } else {
         echo json_encode([
@@ -405,43 +409,107 @@ class Grn extends Admin_Controller {
 }
 
 
-
-
-
- public function updateStock()
+public function updateStock()
 {
-    $productId   = $this->input->post('id', true);         
-    $stockChange = $this->input->post('stockChange', true);
-    $emeiNo      = $this->input->post('emeiNo', true);
-    $price       = $this->input->post('price', true);
-    $price       = ($price === null || $price === '') ? 0 : $price;
+    try {
+        $productId   = $this->input->post('id', true);         
+        $stockChange = $this->input->post('stockChange', true);
+        $emeiNo      = $this->input->post('emeiNo', true);
+        $price       = $this->input->post('price', true);
+        $price       = ($price === null || $price === '') ? 0 : $price;
 
-    if (!$productId || !is_numeric($stockChange)) {
+        // Validate input
+        if (!$productId || !is_numeric($stockChange)) {
+            return $this->output
+                ->set_status_header(400)
+                ->set_content_type('application/json')
+                ->set_output(json_encode(['status' => false, 'message' => 'Invalid input']));
+        }
+
+        /* ===============================
+           1️⃣ Update productimeistock (if EMEI provided)
+        =============================== */
+        if (!empty($emeiNo)) {
+            $this->db->where([
+                'ProductCode' => $productId,
+                'Location'    => 1,
+                'EmiNo'       => $emeiNo,
+                'Price'       => $price
+            ])->update('productimeistock', [
+                'Quantity' => $stockChange
+            ]);
+
+            // Calculate price-level stock (sum of all EMEIs for this price)
+            $row = $this->db
+                ->select_sum('Quantity')
+                ->where([
+                    'ProductCode' => $productId,
+                    'Location'    => 1,
+                    'Price'       => $price
+                ])
+                ->where('Quantity >', 0)
+                ->get('productimeistock')
+                ->row();
+
+            $priceStock = isset($row->Quantity) ? (float)$row->Quantity : 0;
+        } else {
+            /* ===============================
+               2️⃣ Non-EMEI product
+            =============================== */
+            // Use stockChange directly as price stock
+            $priceStock = (float)$stockChange;
+        }
+
+        /* ===============================
+           3️⃣ Update pricestock (price-level stock)
+        =============================== */
+        $this->db->where([
+            'PSCode'       => $productId,
+            'PSLocation'   => 1,
+            'PSPriceLevel' => 1,
+            'Price'        => $price
+        ])->update('pricestock', ['Stock' => $priceStock]);
+
+        /* ===============================
+           4️⃣ Update total product stock
+        =============================== */
+        if (!empty($emeiNo)) {
+            // Sum all EMEIs for total stock
+            $row = $this->db
+                ->select_sum('Quantity')
+                ->where(['ProductCode' => $productId, 'Location' => 1])
+                ->where('Quantity >', 0)
+                ->get('productimeistock')
+                ->row();
+
+            $totalStock = isset($row->Quantity) ? (float)$row->Quantity : 0;
+        } else {
+            // Non-EMEI product
+            $totalStock = (float)$stockChange;
+        }
+
+        $this->db->where(['ProductCode' => $productId, 'Location' => 1])
+                 ->update('productstock', ['Stock' => $totalStock]);
+
+        // ✅ Success response
         return $this->output
+            ->set_status_header(200)
             ->set_content_type('application/json')
-            ->set_output(json_encode(['status' => false, 'message' => 'Invalid input']));
+            ->set_output(json_encode(['status' => true, 'message' => 'Stock updated successfully']));
+
+    } catch (Exception $e) {
+        // Catch any error and return JSON
+        return $this->output
+            ->set_status_header(500)
+            ->set_content_type('application/json')
+            ->set_output(json_encode([
+                'status' => false, 
+                'message' => 'Server error: ' . $e->getMessage()
+            ]));
     }
-
-    if ($emeiNo) {
-        $this->db->where(['ProductCode' => $productId, 'Location' => 1, 'EmiNo' => $emeiNo]);
-        $this->db->update('productimeistock', ['Quantity' => $stockChange]);
-    }
-
-    $this->db->where(['ProductCode' => $productId, 'Location' => 1]);
-    $this->db->update('productstock', ['Stock' => $stockChange]);
-
-    $this->db->where([
-        'PSCode'       => $productId,
-        'PSLocation'   => 1,
-        'PSPriceLevel' => 1,
-        'Price'        => $price
-    ]);
-    $this->db->update('pricestock', ['Stock' => $stockChange]);
-
-    return $this->output
-        ->set_content_type('application/json')
-        ->set_output(json_encode(['status' => true, 'message' => 'Stock updated successfully']));
 }
+
+
 
 
 

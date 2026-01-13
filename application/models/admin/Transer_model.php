@@ -77,47 +77,29 @@ class Transer_model extends CI_Model {
 
   public function loadproductEmei($product, $q, $location)
 {
-    $query2 = $this->db->select('productimeistock.EmiNo')
-        ->from('product')
-        ->where('product.ProductCode', $product)
+    $query2 = $this->db
+        ->select('productimeistock.EmiNo')
+        ->from('productimeistock') // ✅ FIX
+        ->join('product', 'product.ProductCode = productimeistock.ProductCode')
+        ->where('productimeistock.ProductCode', $product)
         ->where('productimeistock.Location', $location)
-         ->where('productimeistock.Quantity', 1)      
-        ->like("productimeistock.EmiNo", $q, 'both')
-        ->join('productimeistock', 'productimeistock.ProductCode = product.ProductCode')
+        ->where('productimeistock.Quantity', 1) // INT → exact
+        ->like('productimeistock.EmiNo', $q, 'both')
         ->get();
-
-    // $query1 = $this->db->select('productserialemistock.SerialNo, productserialemistock.EmiNo')
-    //     ->from('product')
-    //     ->where('product.ProductCode', $product)
-    //     ->where('productserialemistock.Location', $location)
-
-    //     ->like("productserialemistock.EmiNo", $q, 'both')
-    //     ->join('productserialemistock', 'productserialemistock.ProductCode = product.ProductCode')
-    //     ->get();
 
     $row_set = [];
 
-    if ($query2->num_rows() > 0) {
-        foreach ($query2->result_array() as $row) {
-            $row_set[] = [
-                'label' => $row['EmiNo'],
-                'value' => $row['EmiNo'],
-                'emiNo' => $row['EmiNo'],
-            ];
-        }
-     
-    } else {
-        // foreach ($query1->result_array() as $row) {
-        //     $row_set[] = [
-        //         'label' => $row['SerialNo'],
-        //         'value' => $row['SerialNo'],
-        //         'emiNo' => $row['EmiNo'],
-        //     ];
-        // }
+    foreach ($query2->result_array() as $row) {
+        $row_set[] = [
+            'label' => $row['EmiNo'],
+            'value' => $row['EmiNo'],
+            'emiNo' => $row['EmiNo'],
+        ];
     }
 
     return json_encode($row_set);
 }
+
 
     
     public function loadpricelevel() {

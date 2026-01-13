@@ -1,3 +1,4 @@
 Company,ProductCode,ProductName,Price
 
-Lahiru Mobile and Communication,100509,P1,350
+Lahiru Mobile and Communication,100535,IP1,125
+Lahiru Mobile and Communication,100535,IP1,130

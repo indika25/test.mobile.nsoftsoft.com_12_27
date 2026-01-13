@@ -2970,8 +2970,19 @@ $arr[] =null;
         $remark = $_POST['remark'];
         $refferNo = $_POST['refferNo'];
         $mchange = $_POST['mchange'];
-        $customerPayment =  $cashAmount+ $chequeAmount+ $cardAmount+$advanceAmount+$bankAmount+$returnAmount;
+
+
+
+$customerPayment = array_sum(array_map(function($v) {
+    return (float) str_replace(',', '', $v);
+}, [$cashAmount, $chequeAmount, $cardAmount, $advanceAmount, $bankAmount, $returnAmount]));
+
+
+
+
         $cashAmount=$total_net_amount-$creditAmount-$cardAmount-$chequeAmount-$advanceAmount-$bankAmount-$returnAmount;
+
+       
          if ($cashAmount < 0){
 
             $cashAmount = $_POST['cashAmount'];

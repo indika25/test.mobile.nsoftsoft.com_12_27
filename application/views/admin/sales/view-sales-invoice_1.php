@@ -318,7 +318,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
                           <tr style="line-height:25px;">
                               <td colspan="4" style=""></td>
                               <td style='text-align:right; border-bottom:1px solid #000000; border-top:1px solid #000000; border-left:1px solid #000000; border-right:1px solid #000000;'>Paid Amount  </td>
-                              <td id="lbltotalNet"   style="text-align:right; border-bottom:1px solid #000000; border-top:1px solid #000000; border-left:1px solid #000000; border-right:1px solid #000000;"><?php echo number_format($invHed->SalesNetAmount,2);?></td>
+                              <td id="lbltotalNet"   style="text-align:right; border-bottom:1px solid #000000; border-top:1px solid #000000; border-left:1px solid #000000; border-right:1px solid #000000;"><?php echo number_format($invHed->SalesCustomerPayment,2);?></td>
                             </tr>
                          
                           <?php if($invHed->Blance>0){?>
